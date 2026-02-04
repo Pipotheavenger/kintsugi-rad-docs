@@ -1,0 +1,9 @@
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - pytorch-mutex=1.0=cpu
+  - cpuonly=2.0=0
+  - pytorch=*=*cpu* # Not sure why the above don't take care of this
+  - kaldi=*=*cpu* # torchaudio needs kaldi and for some reason was taking cuda version
+  - pyarrow-core=*=*cpu* # peft and transformers need pyarrow and were taking cuda version

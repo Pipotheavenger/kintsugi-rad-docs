@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=45.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.isort]
+profile="black"
+known_third_party = ["wandb"]
+
+[tool.black]
+target-version = ['py310']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.pytest_cache
+  | htmlcov
+  | build
+  | dist
+  # Specific to this package
+  | kirad.egg-info
+)/
+'''
+
+[tool.mypy]
+ignore_missing_imports = true
