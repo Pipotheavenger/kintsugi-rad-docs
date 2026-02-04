@@ -1,0 +1,6 @@
+channels:
+  - nvidia
+  - pytorch
+  - conda-forge
+dependencies:
+  - pytorch-mutex=1.0=cuda

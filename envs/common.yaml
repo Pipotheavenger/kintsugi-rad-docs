@@ -1,0 +1,22 @@
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - azure-core>=1.34.0
+  - azure-identity>=1.23.0
+  - azure-storage-blob>=12.25.1
+  - librosa>=0.11.0
+  - loguru>=0.7.3
+  - numpy>=2.2.6
+  - peft>=0.15.2
+  - pip>=25.1.1
+  - pytest>=8.3.5 # only required for running tests
+  - pytest-cov>=6.1.1 # only required for running tests
+  - python==3.10 # aiohttp has issues with python 3.12
+  - pytorch>=2.6 # somehow conda can't reconcile 2.7 with torchaudio 2.7 ?!
+  - scipy>=1.15.2
+  - torchaudio>=2.7
+  - torchmetrics>=1.7.1
+  - transformers>=4.52.3
+  - pip:
+      - whisper-timestamped>=1.15.8

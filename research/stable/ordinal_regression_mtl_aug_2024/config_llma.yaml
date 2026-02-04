@@ -1,0 +1,77 @@
+---
+experiment_name: "train_llma_data_100p_1e5_nolora"
+description: "LoRA model using audio and text with ordinal regression loss, metrics, and threshold tuning"
+
+model_params:
+  # Set path (absolute or relative to this config file) to a model.py file, or a
+  # package patch in kipy (eg. kipy.models.e2e.whisper_ft_model).
+  model_path: "model.WhisperLLMA"
+  #
+  ckpt_path: ""
+  # when true -- restores training as if it was never interrupted, otherwise just restore weights
+  restore_training_state: false
+  config:
+    whisper_config:
+      model: "openai/whisper-small.en"
+      hf_config:
+        encoder_layerdrop: 0.0
+        dropout: 0.0
+        activation_dropout: 0.0
+
+training_params:
+  seed: 42
+  batch_size: 1
+  effective_batch_size: 64
+  max_epochs: 18
+  early_stopping_patience: 10
+  monitor_loss: "min:metrics/val/total_loss" # mode:name (combined in one param to avoid changing them independently)
+  scheduler:
+    gamma: 0.5
+    milestones:
+      - 14
+  optimizer:
+    backbone:
+      lr: 4.0e-05 # If turning off LoRA, set to 2.0e-6 to achieve competitive results
+      weight_decay: 0.001
+
+data_params:
+  metadata=kirad.datasets_and_dataloaders.KintsugiMetadata:
+    train:
+      duration_column: "prompt_vad_trimmed_duration"
+      max_duration: 90 # more would lead to memory issues; but this limit only drops ~1% of training data
+    val_test:
+      duration_column: "prompt_vad_cut_duration"
+    default:
+      # Parameters in this section apply to all splits.
+      # Parameters specified in split-specific section override the values set here.
+      df_or_dataset_version: "v2.11.4"
+      data_sources:
+        - "phonic"
+        - "sonar_general_pop"
+        - "sonar_senior_pop"
+        - "sonar_elderly_and_latino_pop"
+      dataset_fold: 0
+      label_column:
+        depression: "phq"
+        anxiety: "gad"
+      fraction: 1.0
+  audio=kirad.datasets_and_dataloaders.KintsugiAudioDataset:
+    train:
+      audio_dir_or_feature_store_bucket: "~/.kintsugi/audio/resampled_and_trimmed_audio_with_prompt_vad_params"
+    val_test:
+      audio_dir_or_feature_store_bucket: "~/.kintsugi/audio/resampled_and_cut_audio_with_prompt_vad_params"
+    default:
+      # Parameters in this section apply to all splits.
+      # Parameters specified in split-specific section override the values set here.
+      preprocessor: "openai/whisper-small.en"
+      window_method: "all"
+      normalize_audio: true
+      normalize_features: true
+      ideal_logmel_energies: "logmel_energies.npy"
+      pad_last_chunk_to_full: true
+  backbone_cache=kirad.datasets_and_dataloaders.KintsugiCacheDataset:
+    default:
+      # This is used as a cached ground truth.
+      backbone_cache: "<wandb_url_to_backbone_cache>"
+      # In the cached DAM 2.0 style models, the BERT feature vector is contained in the slice [768:1536)
+      feat_start_idx: 768

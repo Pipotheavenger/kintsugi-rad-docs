@@ -1,0 +1,117 @@
+---
+experiment_name: "ordinal_regression_mtl_jun_2024"
+description: "LoRA model using audio and text with ordinal regression loss, metrics, and threshold tuning"
+
+model_params:
+  # Set path (absolute or relative to this config file) to a model.py file, or a
+  # package path in kipy or kirad (eg. kipy.models.e2e.whisper_ft_model).
+  model_path: "model.DepAnxClassifierWhisperBERT"
+  # this can be wandb URL, for example:
+  # "https://entity.wandb.io/entity/project/artifacts/model/model-run-id/best"
+  ckpt_path: ""
+  restore_training_state: false
+  config:
+    whisper_config:
+      model: "openai/whisper-small.en"
+      hf_config:
+        encoder_layerdrop: 0.0
+        dropout: 0.0
+        activation_dropout: 0.0
+      lora_params:
+        r: 32
+        lora_alpha: 64.0
+        target_modules: "all-linear"
+        lora_dropout: 0.4
+        modules_to_save: # LoRA cannot be applied to these modules, but we still want to train them
+          - conv1
+          - conv2
+        bias: "all"
+    bert_config:
+      model: "google-bert/bert-base-uncased"
+      hf_config:
+        attention_probs_dropout_prob: 0.0
+        classifier_dropout: 0.0 # copies hidden_dropout_prob
+        hidden_dropout_prob: 0.0
+      lora_params:
+        r: 32
+        lora_alpha: 64.0
+        target_modules: "all-linear"
+        lora_dropout: 0.4
+        bias: "all"
+    classifier_config:
+      shared_projection_dim:
+        - 256
+        - 64 # with multiple layers, the last layer acts as the shared matrix B in a low-rank matrix factorization of the task-specific weights W_t = H_t * B
+      tasks:
+        depression:
+          proj_dim: 128
+          dropout: 0.4
+        anxiety:
+          proj_dim: 128
+          dropout: 0.4
+
+training_params:
+  seed: 42
+  batch_size: 2
+  effective_batch_size: 128
+  max_epochs: 32
+  early_stopping_patience: 10
+  monitor_loss: "max:metrics/val/sn_eq_sp@0%i" # mode:name (combined in one param to avoid changing them independently)
+  scheduler:
+    gamma: 0.5
+    milestones:
+      - 20
+      - 26
+  optimizer:
+    backbone:
+      lr: 1.6e-04 # If turning off LoRA, set to 2.0e-6 to achieve competitive results
+      weight_decay: 0.001
+    classifier:
+      lr: 8.0e-04
+      weight_decay: 0.001
+  tasks:
+    depression:
+      ordinal_loss_target_type: "exact28" # Literal["exact28", "LvMvH", "LvMH", "LMvH"]
+      num_classes: 28
+    anxiety:
+      ordinal_loss_target_type: "exact22" # Literal["exact22", "{2,3}_vs_{0,1}", "{0}_vs_{1}_vs_{2}_vs_{3}"]
+      num_classes: 22
+
+data_params:
+  metadata=kirad.datasets_and_dataloaders.KintsugiMetadata:
+    train:
+      duration_column: "prompt_vad_trimmed_duration"
+    val_test:
+      duration_column: "prompt_vad_cut_duration"
+    default:
+      # Parameters in this section apply to all splits.
+      # Parameters specified in split-specific section override the values set here.
+      df_or_dataset_version: "v2.9.4"
+      data_sources:
+        - "phonic"
+        - "sonar_general_pop"
+      dataset_fold: 0
+      label_column:
+        depression: "phq"
+        anxiety: "gad"
+      fraction: 1.0
+  audio=kirad.datasets_and_dataloaders.KintsugiAudioDataset:
+    train:
+      audio_dir_or_feature_store_bucket: "~/.kintsugi/audio/resampled_and_trimmed_audio_with_prompt_vad_params"
+      window_method: "single_random"
+    val_test:
+      audio_dir_or_feature_store_bucket: "~/.kintsugi/audio/resampled_and_cut_audio_with_prompt_vad_params"
+      window_method: "all"
+    default:
+      # Parameters in this section apply to all splits.
+      # Parameters specified in split-specific section override the values set here.
+      preprocessor: "openai/whisper-small.en"
+      normalize_audio: true
+      normalize_features: true
+      ideal_logmel_energies: "logmel_energies.npy"
+  text=kirad.datasets_and_dataloaders.KintsugiTextDataset:
+    default:
+      # Parameters in this section apply to all splits.
+      # Parameters specified in split-specific section override the values set here.
+      text_dir: "~/.kintsugi/transcription"
+      preprocessor: "google-bert/bert-base-uncased"
