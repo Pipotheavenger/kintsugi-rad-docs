@@ -1,9 +1,67 @@
+/* Embedded preview: capped height, scrolls inside. */
 .kmap {
-  overflow-x: auto;
-  margin: 1em 0 1.5em;
+  overflow: auto;
+  max-height: 34rem;
+  margin: 0.3em 0 1.5em;
   padding: 0.75em;
   border: 1px solid var(--md-default-fg-color--lightest);
   border-radius: 6px;
 }
 .kmap svg { max-width: none !important; }
 .kmap .node { cursor: pointer; }
+
+.kmap-open {
+  display: inline-block;
+  margin-top: 0.6em;
+  padding: 0.35em 0.9em;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--md-primary-bg-color, #fff);
+  background: var(--md-accent-fg-color);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.kmap-open:hover { filter: brightness(0.92); }
+
+/* Full-screen viewer. */
+.kmap-full {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: var(--md-default-bg-color);
+}
+.kmap-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  font-size: 0.8rem;
+}
+.kmap-hint { color: var(--md-default-fg-color--light); flex: 1; }
+.kmap-tools { display: flex; gap: 0.3rem; }
+.kmap-tools button {
+  min-width: 2.2rem;
+  padding: 0.25rem 0.6rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color--lightest);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.kmap-stage {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+.kmap-stage.dragging { cursor: grabbing; }
+.kmap-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.kmap-canvas svg { display: block; max-width: none !important; }
