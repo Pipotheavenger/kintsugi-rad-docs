@@ -6,7 +6,8 @@ function's docstring, read from the source at build time, so the website can nev
 drift from the comments in the code.
 
 In any page, a line `{{ codemap }}` expands to the full map and
-`{{ codemap:<stage-id> }}` to a single stage.
+`{{ codemap:<stage-id> }}` to a single stage, `{{ codemap:overview }}` to the
+file-level diagram only. `{{ hardcoded }}` lists every `# HARDCODED:` comment.
 """
 
 import ast
@@ -131,6 +132,8 @@ class CodeMap:
         return "\n".join(out) + "\n"
 
     def render(self, sid):
+        if sid == "overview":
+            return self.overview() + "\n"
         if sid:
             return self.stage(sid)
         parts = ["## The whole story, file by file", "", self.overview(), ""]
