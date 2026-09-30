@@ -1,0 +1,216 @@
+# The story of the code, in execution order.
+# Descriptions are NOT written here: the site reads the first docstring line of each
+# function from the source code. To change a description, edit the code's docstring.
+#
+# stages[].files[].functions: names as in the source; methods as Class.method.
+# stages[].flow: [ "file::func", "file::func", "optional label" ] arrows inside a stage.
+# file_edges: arrows between files in the overview, as "stage-id:path".
+
+repo_url: https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main
+
+stages:
+  - id: prep
+    title: "0 · Before training (optional)"
+    story: >
+      Transcripts are produced once, outside training, and only matter for runs that
+      use text (DAM 2, and DAM 3 phase 1).
+    files:
+      - path: scripts/run_whisper_asr.py
+        functions: [run_whisper_asr]
+
+  - id: launch
+    title: "1 · Launch"
+    story: >
+      One command reads a YAML config, validates it, builds the model and the data
+      loaders, and hands everything to a PyTorch Lightning Trainer.
+    files:
+      - path: scripts/launcher.py
+        functions: [launcher, _setup_launcher, _setup_callbacks, run_training, run_evaluation, run_caching, run_compilation]
+      - path: kirad/launcher_utils.py
+        functions: [LauncherConfig.__init__, LauncherConfig._init_data_params, LauncherConfig.get_params_by_split, LauncherConfig._init_model, LauncherConfig.get_dataset, LauncherConfig.get_data_loader, TrainingParams, ModelParams]
+      - path: kirad/utils.py
+        functions: [import_object, localize_wandb_artifact]
+    flow:
+      - [scripts/launcher.py::launcher, scripts/launcher.py::_setup_launcher]
+      - [scripts/launcher.py::_setup_launcher, kirad/launcher_utils.py::LauncherConfig.__init__, "YAML"]
+      - [kirad/launcher_utils.py::LauncherConfig.__init__, kirad/launcher_utils.py::TrainingParams]
+      - [kirad/launcher_utils.py::LauncherConfig.__init__, kirad/launcher_utils.py::LauncherConfig._init_data_params]
+      - [kirad/launcher_utils.py::LauncherConfig._init_data_params, kirad/launcher_utils.py::LauncherConfig.get_params_by_split]
+      - [kirad/launcher_utils.py::LauncherConfig.__init__, kirad/launcher_utils.py::ModelParams]
+      - [kirad/launcher_utils.py::ModelParams, kirad/utils.py::localize_wandb_artifact, "W&B ckpt"]
+      - [kirad/launcher_utils.py::LauncherConfig.__init__, kirad/launcher_utils.py::LauncherConfig._init_model]
+      - [kirad/launcher_utils.py::LauncherConfig._init_model, kirad/utils.py::import_object, "model.py"]
+      - [scripts/launcher.py::launcher, scripts/launcher.py::_setup_callbacks]
+      - [scripts/launcher.py::launcher, scripts/launcher.py::run_training, "mode"]
+      - [scripts/launcher.py::launcher, scripts/launcher.py::run_evaluation]
+      - [scripts/launcher.py::launcher, scripts/launcher.py::run_caching]
+      - [scripts/launcher.py::launcher, scripts/launcher.py::run_compilation]
+      - [scripts/launcher.py::run_training, kirad/launcher_utils.py::LauncherConfig.get_data_loader]
+      - [kirad/launcher_utils.py::LauncherConfig.get_data_loader, kirad/launcher_utils.py::LauncherConfig.get_dataset]
+
+  - id: data
+    title: "2 · Data"
+    story: >
+      The metadata CSV says which WAV files to open and what their labels are. Audio is
+      cut into 30 s windows and turned into features; windows of all recordings in a
+      batch are concatenated and `length` remembers where each recording ends.
+    files:
+      - path: kirad/datasets_and_dataloaders.py
+        functions: [KintsugiMetadata, KintsugiMetadata.preprocess_metadata, KintsugiMetadata.filter_metadata, KintsugiMetadata.__getitem__, KintsugiAudioDataset.__getitem__, get_preprocessor_with_audio_normalization, get_window_starts, KintsugiTextDataset.__getitem__, KintsugiCacheDataset, UuidSampler]
+      - path: kirad/dataset_utils.py
+        functions: [load_relative_dataset, load_dataset, merge_df_rows_by_subject, broadcast_collate]
+      - path: kirad/augmentations.py
+        functions: [RawBoost]
+    flow:
+      - [kirad/datasets_and_dataloaders.py::KintsugiMetadata, kirad/dataset_utils.py::load_relative_dataset, "CSV"]
+      - [kirad/dataset_utils.py::load_relative_dataset, kirad/dataset_utils.py::load_dataset]
+      - [kirad/datasets_and_dataloaders.py::KintsugiMetadata, kirad/datasets_and_dataloaders.py::KintsugiMetadata.preprocess_metadata]
+      - [kirad/datasets_and_dataloaders.py::KintsugiMetadata.preprocess_metadata, kirad/dataset_utils.py::merge_df_rows_by_subject, "train only"]
+      - [kirad/datasets_and_dataloaders.py::KintsugiMetadata.preprocess_metadata, kirad/datasets_and_dataloaders.py::get_window_starts, "count windows"]
+      - [kirad/datasets_and_dataloaders.py::KintsugiMetadata, kirad/datasets_and_dataloaders.py::KintsugiMetadata.filter_metadata]
+      - [kirad/datasets_and_dataloaders.py::UuidSampler, kirad/datasets_and_dataloaders.py::KintsugiAudioDataset.__getitem__, "uuid"]
+      - [kirad/datasets_and_dataloaders.py::KintsugiAudioDataset.__getitem__, kirad/augmentations.py::RawBoost, "optional"]
+      - [kirad/datasets_and_dataloaders.py::KintsugiAudioDataset.__getitem__, kirad/datasets_and_dataloaders.py::get_preprocessor_with_audio_normalization]
+      - [kirad/datasets_and_dataloaders.py::get_preprocessor_with_audio_normalization, kirad/datasets_and_dataloaders.py::get_window_starts, "cut"]
+      - [kirad/datasets_and_dataloaders.py::KintsugiAudioDataset.__getitem__, kirad/dataset_utils.py::broadcast_collate]
+      - [kirad/datasets_and_dataloaders.py::KintsugiTextDataset.__getitem__, kirad/dataset_utils.py::broadcast_collate]
+      - [kirad/datasets_and_dataloaders.py::KintsugiMetadata.__getitem__, kirad/dataset_utils.py::broadcast_collate, "labels"]
+
+  - id: model
+    title: "3 · Model (DAM 1)"
+    story: >
+      Raw audio windows become log-mel images on the GPU, the Whisper encoder (with LoRA)
+      turns each window into a 768-d vector, and a shared layer feeds one small head per
+      task that outputs a single score.
+    files:
+      - path: research/stable/ordinal_regression_mtl_mar_2024/model.py
+        functions: [DepAnxClassifier, DepAnxClassifier.forward, DepAnxClassifier.forward_backbone, DepAnxClassifier.configure_optimizers]
+      - path: kirad/feature_extraction_whisper.py
+        functions: [WhisperTorchFeatureExtractor.forward, WhisperTorchFeatureExtractor._torch_extract_fbank_features]
+      - path: kirad/base_models.py
+        functions: [WhisperBackbone.forward, KintsugiBackboneBase.apply_lora, MultitaskHead.forward, MultitaskHead.SharedLayers, MultitaskHead.TaskHead]
+      - path: kirad/constants.py
+        functions: [DatasetFields]
+    flow:
+      - [research/stable/ordinal_regression_mtl_mar_2024/model.py::DepAnxClassifier.forward, research/stable/ordinal_regression_mtl_mar_2024/model.py::DepAnxClassifier.forward_backbone]
+      - [research/stable/ordinal_regression_mtl_mar_2024/model.py::DepAnxClassifier.forward_backbone, kirad/feature_extraction_whisper.py::WhisperTorchFeatureExtractor.forward, "raw audio"]
+      - [kirad/feature_extraction_whisper.py::WhisperTorchFeatureExtractor.forward, kirad/feature_extraction_whisper.py::WhisperTorchFeatureExtractor._torch_extract_fbank_features]
+      - [research/stable/ordinal_regression_mtl_mar_2024/model.py::DepAnxClassifier.forward_backbone, kirad/base_models.py::WhisperBackbone.forward, "log-mel"]
+      - [kirad/base_models.py::KintsugiBackboneBase.apply_lora, kirad/base_models.py::WhisperBackbone.forward, "at init"]
+      - [research/stable/ordinal_regression_mtl_mar_2024/model.py::DepAnxClassifier.forward, kirad/base_models.py::MultitaskHead.forward, "768-d"]
+      - [kirad/base_models.py::MultitaskHead.forward, kirad/base_models.py::MultitaskHead.SharedLayers]
+      - [kirad/base_models.py::MultitaskHead.SharedLayers, kirad/base_models.py::MultitaskHead.TaskHead, "64-d"]
+
+  - id: loss
+    title: "4 · Loss"
+    story: >
+      Each task turns its score into 27 (or 21) ordered yes/no questions with CORAL.
+      Window scores are averaged per recording, and a variance penalty makes windows
+      of the same person agree.
+    files:
+      - path: kirad/base_models.py
+        functions: [MultiTaskOrdinalRegressionPLModule.step, OrdinalRegressionPLModule.step, OrdinalRegressionPLModule.compute_and_log_loss]
+      - path: kirad/losses.py
+        functions: [CORALLoss.forward]
+      - path: kirad/utils.py
+        functions: [average_and_variance_tensor_in_segments, average_tensor_in_segments]
+    flow:
+      - [kirad/base_models.py::MultiTaskOrdinalRegressionPLModule.step, kirad/base_models.py::OrdinalRegressionPLModule.step, "per task"]
+      - [kirad/base_models.py::OrdinalRegressionPLModule.step, kirad/base_models.py::OrdinalRegressionPLModule.compute_and_log_loss]
+      - [kirad/base_models.py::OrdinalRegressionPLModule.compute_and_log_loss, kirad/utils.py::average_and_variance_tensor_in_segments, "per recording"]
+      - [kirad/utils.py::average_and_variance_tensor_in_segments, kirad/utils.py::average_tensor_in_segments]
+      - [kirad/base_models.py::OrdinalRegressionPLModule.compute_and_log_loss, kirad/losses.py::CORALLoss.forward]
+
+  - id: metrics
+    title: "5 · Thresholds and metrics"
+    story: >
+      After every validation, scores of all recordings are gathered, six threshold sets
+      are tuned by dynamic programming, and Sn/Sp with an indeterminate band are
+      computed. Test reuses the validation thresholds.
+    files:
+      - path: kirad/base_models.py
+        functions: [MultiTaskOrdinalRegressionPLModule.on_validation_test_epoch_end, OrdinalRegressionPLModule.on_validation_test_epoch_end, OrdinalRegressionPLModule.quantize_labels, OrdinalRegressionPLModule.log_ordinal_metrics, OrdinalRegressionPLModule.log_thresholding_metrics]
+      - path: kirad/ordinal_thresholding.py
+        functions: [OptimalOrdinalThresholdingViaDynamicProgramming.tune_thresholds, OptimalCostPerSampleOrdinalThresholding.dp_step, OptimalCostPerClassOrdinalThresholding.dp_step, CORALThresholding.tune_thresholds]
+      - path: kirad/metrics.py
+        functions: [MultiCatMetric, IndetSnSpArray.build, IndetSnSpArray.roc_curve, IndetSnSpArray.sn_eq_sp_graph]
+    flow:
+      - [kirad/base_models.py::MultiTaskOrdinalRegressionPLModule.on_validation_test_epoch_end, kirad/base_models.py::OrdinalRegressionPLModule.on_validation_test_epoch_end, "per task"]
+      - [kirad/metrics.py::MultiCatMetric, kirad/base_models.py::OrdinalRegressionPLModule.on_validation_test_epoch_end, "gathered scores"]
+      - [kirad/base_models.py::OrdinalRegressionPLModule.on_validation_test_epoch_end, kirad/base_models.py::OrdinalRegressionPLModule.quantize_labels]
+      - [kirad/base_models.py::OrdinalRegressionPLModule.on_validation_test_epoch_end, kirad/ordinal_thresholding.py::OptimalOrdinalThresholdingViaDynamicProgramming.tune_thresholds, "val only"]
+      - [kirad/ordinal_thresholding.py::OptimalOrdinalThresholdingViaDynamicProgramming.tune_thresholds, kirad/ordinal_thresholding.py::OptimalCostPerSampleOrdinalThresholding.dp_step]
+      - [kirad/ordinal_thresholding.py::OptimalOrdinalThresholdingViaDynamicProgramming.tune_thresholds, kirad/ordinal_thresholding.py::OptimalCostPerClassOrdinalThresholding.dp_step]
+      - [kirad/base_models.py::OrdinalRegressionPLModule.on_validation_test_epoch_end, kirad/ordinal_thresholding.py::CORALThresholding.tune_thresholds]
+      - [kirad/base_models.py::OrdinalRegressionPLModule.on_validation_test_epoch_end, kirad/metrics.py::IndetSnSpArray.build]
+      - [kirad/metrics.py::IndetSnSpArray.build, kirad/metrics.py::IndetSnSpArray.sn_eq_sp_graph]
+      - [kirad/base_models.py::OrdinalRegressionPLModule.on_validation_test_epoch_end, kirad/base_models.py::OrdinalRegressionPLModule.log_ordinal_metrics]
+      - [kirad/base_models.py::OrdinalRegressionPLModule.log_ordinal_metrics, kirad/metrics.py::IndetSnSpArray.roc_curve]
+      - [kirad/base_models.py::OrdinalRegressionPLModule.on_validation_test_epoch_end, kirad/base_models.py::OrdinalRegressionPLModule.log_thresholding_metrics]
+
+  - id: outputs
+    title: "6 · Outputs and analysis"
+    story: >
+      The best checkpoint (with thresholds inside) is saved at the end of validation;
+      scores, metrics, code and datasets go to W&B. After training, utils pulls the
+      scores back for analysis and report cards.
+    files:
+      - path: kirad/launcher_utils.py
+        functions: [DistributedModelCheckpoint.on_validation_end, LauncherLogger]
+      - path: scripts/launcher.py
+        functions: [_log_to_wandb, _log_datasets_to_wandb]
+      - path: kirad/utils.py
+        functions: [cache_backbone, get_dataframe_with_scores, indet_analysis, analyze_dataframe_with_scores, get_wandb_report_card_tsvs]
+      - path: kirad/plotting.py
+        functions: [plot_indeterminate_analysis]
+    flow:
+      - [scripts/launcher.py::_log_to_wandb, kirad/launcher_utils.py::LauncherLogger]
+      - [scripts/launcher.py::_log_datasets_to_wandb, kirad/launcher_utils.py::LauncherLogger]
+      - [kirad/utils.py::get_wandb_report_card_tsvs, kirad/utils.py::indet_analysis]
+      - [kirad/utils.py::indet_analysis, kirad/utils.py::get_dataframe_with_scores]
+      - [kirad/utils.py::get_dataframe_with_scores, kirad/plotting.py::plot_indeterminate_analysis, "df"]
+
+  - id: variants
+    title: "7 · The other versions (DAM 2, DAM 3)"
+    story: >
+      DAM 2 adds a text backbone over the transcript. DAM 3 first trains a Whisper to
+      imitate BERT's vector from audio (WhisperLLMA), then freezes it and trains only
+      the head.
+    files:
+      - path: research/stable/ordinal_regression_mtl_jun_2024/model.py
+        functions: [DepAnxClassifierBase, DepAnxClassifierWhisperBERT, DepAnxClassifierWhisperLLAMA, DepAnxClassifierLLAMA]
+      - path: research/stable/ordinal_regression_mtl_aug_2024/model.py
+        functions: [WhisperLLMA, WhisperLLMA.step, DepAnxClassifier, DepAnxClassifier.forward_backbone]
+      - path: kirad/base_models.py
+        functions: [BERTBackbone, LLAMABackbone, Wav2Vec2Backbone]
+    flow:
+      - [research/stable/ordinal_regression_mtl_jun_2024/model.py::DepAnxClassifierWhisperBERT, research/stable/ordinal_regression_mtl_jun_2024/model.py::DepAnxClassifierBase]
+      - [research/stable/ordinal_regression_mtl_jun_2024/model.py::DepAnxClassifierWhisperBERT, kirad/base_models.py::BERTBackbone, "text"]
+      - [research/stable/ordinal_regression_mtl_jun_2024/model.py::DepAnxClassifierWhisperLLAMA, kirad/base_models.py::LLAMABackbone]
+      - [research/stable/ordinal_regression_mtl_jun_2024/model.py::DepAnxClassifierLLAMA, kirad/base_models.py::LLAMABackbone]
+      - [research/stable/ordinal_regression_mtl_aug_2024/model.py::WhisperLLMA, research/stable/ordinal_regression_mtl_aug_2024/model.py::WhisperLLMA.step, "phase 1: MSE"]
+      - [research/stable/ordinal_regression_mtl_aug_2024/model.py::WhisperLLMA, research/stable/ordinal_regression_mtl_aug_2024/model.py::DepAnxClassifier, "frozen"]
+      - [research/stable/ordinal_regression_mtl_aug_2024/model.py::DepAnxClassifier, research/stable/ordinal_regression_mtl_aug_2024/model.py::DepAnxClassifier.forward_backbone]
+
+file_edges:
+  - {from: "prep:scripts/run_whisper_asr.py", to: "data:kirad/datasets_and_dataloaders.py", label: "transcript JSON"}
+  - {from: "launch:scripts/launcher.py", to: "launch:kirad/launcher_utils.py", label: "builds LauncherConfig"}
+  - {from: "launch:kirad/launcher_utils.py", to: "launch:kirad/utils.py", label: "import_object"}
+  - {from: "launch:kirad/launcher_utils.py", to: "data:kirad/datasets_and_dataloaders.py", label: "get_dataset"}
+  - {from: "data:kirad/datasets_and_dataloaders.py", to: "data:kirad/dataset_utils.py", label: "CSV load, collate"}
+  - {from: "data:kirad/datasets_and_dataloaders.py", to: "data:kirad/augmentations.py", label: "optional"}
+  - {from: "data:kirad/dataset_utils.py", to: "model:research/stable/ordinal_regression_mtl_mar_2024/model.py", label: "batch"}
+  - {from: "model:research/stable/ordinal_regression_mtl_mar_2024/model.py", to: "model:kirad/feature_extraction_whisper.py", label: "log-mel"}
+  - {from: "model:research/stable/ordinal_regression_mtl_mar_2024/model.py", to: "model:kirad/base_models.py", label: "backbone + head"}
+  - {from: "model:research/stable/ordinal_regression_mtl_mar_2024/model.py", to: "model:kirad/constants.py", label: "cutoffs"}
+  - {from: "model:kirad/base_models.py", to: "loss:kirad/base_models.py", label: "scores"}
+  - {from: "loss:kirad/base_models.py", to: "loss:kirad/losses.py", label: "CORAL"}
+  - {from: "loss:kirad/base_models.py", to: "loss:kirad/utils.py", label: "per-recording mean"}
+  - {from: "loss:kirad/base_models.py", to: "metrics:kirad/base_models.py", label: "each validation"}
+  - {from: "metrics:kirad/base_models.py", to: "metrics:kirad/ordinal_thresholding.py", label: "tune"}
+  - {from: "metrics:kirad/base_models.py", to: "metrics:kirad/metrics.py", label: "Sn / Sp"}
+  - {from: "metrics:kirad/base_models.py", to: "outputs:kirad/launcher_utils.py", label: "checkpoint"}
+  - {from: "outputs:kirad/launcher_utils.py", to: "outputs:kirad/utils.py", label: "W&B artifacts"}
+  - {from: "outputs:kirad/utils.py", to: "outputs:kirad/plotting.py"}
+  - {from: "model:research/stable/ordinal_regression_mtl_mar_2024/model.py", to: "variants:research/stable/ordinal_regression_mtl_jun_2024/model.py", label: "same head, + text"}
+  - {from: "variants:research/stable/ordinal_regression_mtl_jun_2024/model.py", to: "variants:research/stable/ordinal_regression_mtl_aug_2024/model.py", label: "teacher"}

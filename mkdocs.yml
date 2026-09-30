@@ -1,0 +1,62 @@
+site_name: kintsugi-rad · code map
+site_description: How kintsugi-rad works, file by file, with links to the documented code.
+repo_url: https://github.com/Pipotheavenger/kintsugi-rad-docs
+repo_name: kintsugi-rad-docs
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: white
+      accent: amber
+      toggle: {icon: material/weather-night, name: Dark mode}
+    - scheme: slate
+      primary: black
+      accent: amber
+      toggle: {icon: material/weather-sunny, name: Light mode}
+
+hooks:
+  - docs/hooks/codemap.py
+
+exclude_docs: |
+  hooks/
+  codemap.yml
+
+markdown_extensions:
+  - admonition
+  - tables
+  - attr_list
+  - md_in_html
+  - toc: {permalink: true}
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [., scripts]
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_root_heading: true
+            show_if_no_docstring: true
+            members_order: source
+            heading_level: 2
+
+nav:
+  - Home: index.md
+  - Code map: code-map.md
+  - Contributing: STYLE.md
