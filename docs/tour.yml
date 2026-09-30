@@ -1,0 +1,269 @@
+# Walkthrough of one `train` run of DAM 1, in execution order.
+# Each step: stage, file, function (as in codemap.yml), in, out, optional note.
+# "Does" is NOT written here: the site shows the first docstring line from the code.
+
+intro: >
+  This page follows one run of
+  `python scripts/launcher.py train research/stable/ordinal_regression_mtl_mar_2024/config.yaml`
+  (DAM 1, audio only) in execution order. Steps 1-20 run once at start-up (13-20 once per
+  split: train, val, test): read the config, build the model, loaders and datasets. Inside
+  trainer.fit, steps 21-23 run per recording and 24-35 per batch: audio windows, Whisper
+  encoder, head, loss. Steps 36-42 run after each validation pass: tune thresholds, compute
+  metrics, save the checkpoint. trainer.test then runs the same path on the test split with the
+  val-tuned thresholds (no tuning); step 43 runs at the end and step 44 is a separate analysis
+  call. As shipped, the config stops at steps 2, 11 and 22; each "Watch out" gives the fix.
+  Each step shows where the function is, what it does (its docstring) and what it receives and
+  returns in this run (B = recordings per batch = 2, W = windows per recording, ΣW = windows in
+  the batch). The numbered gold boxes in the Code map are these same steps.
+
+steps:
+  - stage: launch
+    file: scripts/launcher.py
+    function: launcher
+    in: 'mode "train", config path .../ordinal_regression_mtl_mar_2024/config.yaml'
+    out: "calls, in order: _setup_launcher (step 2), _setup_callbacks (10), _log_to_wandb (11), then builds Trainer (GPU fp16 or CPU fp32, DDP, max_epochs 32, grad accumulation) and calls run_training (12); after it returns, _log_datasets_to_wandb (43)"
+    note: "Validation runs every 16000 // (2 × GPUs) training batches, counted across epochs (check_val_every_n_epoch None), not once per epoch; 16000 must divide by the global batch size. If all 32 epochs together have fewer batches than that, validation never runs, no best checkpoint exists and run_training crashes at torch.load. Lower training_examples_per_eval for small datasets."
+  - stage: launch
+    file: scripts/launcher.py
+    function: _setup_launcher
+    in: "from step 1: config path, experiment_dir None"
+    out: "LauncherParams(launcher_config, launcher_logger); building LauncherConfig runs steps 3-9; the W&B logger exists only on rank 0"
+    note: "wandb_entity and wandb_project are hardcoded to None (launcher.py) and raise ValueError right after LauncherConfig (model already built, Whisper already downloaded): set them before the first run."
+  - stage: launch
+    file: kirad/launcher_utils.py
+    function: LauncherConfig.__init__
+    in: "from step 2: config path; experiment_dir None -> the config's folder"
+    out: "LauncherConfig with training_params, model_params, model; experiment folder added to sys.path"
+    note: 'model_path "model.DepAnxClassifier" is imported from the experiment folder via sys.path, so it resolves to that folder''s model.py.'
+  - stage: launch
+    file: kirad/launcher_utils.py
+    function: TrainingParams
+    in: "from step 3: training_params: batch_size 2, effective_batch_size 128, max_epochs 32, seed 44, optimizer {backbone lr 1.6e-4, classifier lr 8e-4, wd 1e-3}, scheduler, tasks"
+    out: "validated params; _global_batch_size = WORLD_SIZE × 2; pl.seed_everything(44)"
+    note: "Grad accumulation = 128 // (GPUs × 2), e.g. 64 on 1 GPU; must divide exactly or the launcher raises."
+  - stage: launch
+    file: kirad/launcher_utils.py
+    function: LauncherConfig._init_data_params
+    in: 'from step 3: data_params keys "metadata=...KintsugiMetadata" and "audio=...KintsugiAudioDataset"'
+    out: 'metadata_factory, {"audio": KintsugiAudioDataset}, params per split (train/val/test)'
+  - stage: launch
+    file: kirad/launcher_utils.py
+    function: LauncherConfig.get_params_by_split
+    in: 'from step 5: the whole mapping of one data_params key (sections default, val_test, train), split "train", "val" or "test"'
+    out: 'merged dict, e.g. metadata train: duration_column "prompt_vad_trimmed_duration", merge_rows_by_subject "many_to_one", dataset_splits "train"; audio train: window_method "random_adjacent_pair"'
+    note: "Any string value that is an existing path (file or folder, after ~ expansion; relative ones against the experiment folder) is replaced by its absolute Path."
+  - stage: launch
+    file: kirad/launcher_utils.py
+    function: LauncherConfig._init_model
+    in: 'from step 3: model_params (model_path "model.DepAnxClassifier", ckpt_path "" -> None), config (whisper_config, classifier_config), training_params'
+    out: "self.model = DepAnxClassifier; no weights loaded (ckpt_path None); restore_training_state_ckpt_path None"
+  - stage: launch
+    file: research/stable/ordinal_regression_mtl_mar_2024/model.py
+    function: DepAnxClassifier
+    in: "from step 7 (import_object): whisper_config (small.en, LoRA), classifier_config [256, 64] + tasks, training_params.tasks"
+    out: "LightningModule: tasks {depression: 28 classes, anxiety: 22}, feature_extractor, backbone, head"
+    note: "Whisper small.en is downloaded from HuggingFace here. No featex_config in the YAML, so the GPU extractor keeps normalize_audio and ideal_logmel_energies on."
+  - stage: launch
+    file: kirad/base_models.py
+    function: KintsugiBackboneBase.apply_lora
+    in: 'from step 8 (WhisperBackbone.__init__): lora_params: r 32, lora_alpha 64.0, "all-linear", lora_dropout 0.4, modules_to_save [conv1, conv2], bias "all"'
+    out: "self.backbone = PEFT-wrapped Whisper encoder; logs the LoRA-targeted and fully trained modules"
+    note: 'Called from `WhisperBackbone.__init__`. bias "all" also trains every bias of the encoder; conv1/conv2 are trained in full.'
+  - stage: launch
+    file: scripts/launcher.py
+    function: _setup_callbacks
+    in: 'from step 1 (launcher): monitor_loss "max:metrics/val/sn_eq_sp@0%i", early_stopping_patience 10'
+    out: "[LearningRateMonitor(step), EarlyStopping(max, patience 10), DistributedModelCheckpoint(top-1 + last)]"
+    note: "Patience counts validations (every 16000 training examples), not epochs."
+  - stage: launch
+    file: scripts/launcher.py
+    function: _log_to_wandb
+    in: "from step 1: LauncherConfig, LauncherLogger from step 2 (rank 0 only)"
+    out: "W&B artifacts source-experiment-<run>, source-kirad-<run>, package_info table"
+    note: 'get_package_info("kipy") fails without the private kipy package; remove "kipy" from the list in launcher.py.'
+  - stage: launch
+    file: scripts/launcher.py
+    function: run_training
+    in: "from step 1: Trainer, LauncherConfig"
+    out: "trainer.fit(model, train, val) builds loaders via steps 13-20 and runs 21-42; reload best_model_path weights; trainer.test on the test loader (same path, split test, val-tuned thresholds)"
+    note: "Inside fit, Lightning calls configure_model (adds the `<task>/` log prefix), configure_optimizers (AdamW: backbone lr 1.6e-4, head + CORAL biases 8e-4; MultiStepLR halves both at epochs 20 and 26) and runs 2 sanity val batches."
+  - stage: launch
+    file: kirad/launcher_utils.py
+    function: LauncherConfig.get_data_loader
+    in: 'from step 12: split "train", training_mode True (then "val" and "test" with False)'
+    out: "DataLoader: batch_size 2, broadcast_collate, UuidSampler; drop_last True for train"
+    note: "num_workers = (CPUs - 1) // GPUs unless training_params.cpus_per_worker is set."
+  - stage: launch
+    file: kirad/launcher_utils.py
+    function: LauncherConfig.get_dataset
+    in: 'from step 13: split "train"'
+    out: 'StackDataset(metadata=KintsugiMetadata, audio=KintsugiAudioDataset); each item is a dict with keys "metadata" and "audio"'
+    note: "Items are indexed by UUID string (from UuidSampler), not by integer position."
+  - stage: data
+    file: kirad/datasets_and_dataloaders.py
+    function: KintsugiMetadata
+    in: 'from step 14: train: "v2.11.4", 4 data_sources, fold 0, label phq/gad, prompt_vad_trimmed_duration, many_to_one'
+    out: "metadata object; _df indexed by uuid, preprocessed and filtered"
+    note: '"v2.11.4" is a private Kintsugi dataset version fetched with gsutil; for new data set df_or_dataset_version to a CSV path.'
+  - stage: data
+    file: kirad/dataset_utils.py
+    function: load_relative_dataset
+    in: 'from step 15 (KintsugiMetadata.__init__): "v2.11.4", data_sources, "train", fold 0, audio_root ~/.kintsugi/audio/resampled_and_trimmed_...'
+    out: "DataFrame + audio_filename <audio_root>/<filename>.wav, text_filename <cwd>/<filename>.json"
+  - stage: data
+    file: kirad/datasets_and_dataloaders.py
+    function: KintsugiMetadata.preprocess_metadata
+    in: "from step 16: _df; train: merge_rows_by_subject many_to_one; val/test: False"
+    out: "train: one row per subject (durations summed, filename list); all splits: + num_windows column"
+    note: 'merge_df_rows_by_subject drops audio_filename, so with this config the train `KintsugiAudioDataset.__getitem__` (step 22) fails on row.audio_filename.'
+  - stage: data
+    file: kirad/datasets_and_dataloaders.py
+    function: KintsugiMetadata.filter_metadata
+    in: "from step 17: _df, fraction 1.0, min_duration 30 s (default), max_duration None"
+    out: "_df sampled (random_state 1) and limited to recordings with duration_column >= 30 s"
+  - stage: data
+    file: kirad/datasets_and_dataloaders.py
+    function: get_preprocessor_with_audio_normalization
+    in: "from step 14 (KintsugiAudioDataset.__init__): dummy_preprocessor (preprocessor false), window_method, normalize_audio True, 30 s, max_overlap_frac 0.0"
+    out: "closure (audio [T], sr) -> raw windows [W, 480000], DC removed and peak-scaled to [-1, 1]"
+    note: "Built once in `KintsugiAudioDataset.__init__` (init_data_processor), which step 14 triggers; the closure runs on every item."
+  - stage: data
+    file: kirad/datasets_and_dataloaders.py
+    function: UuidSampler
+    in: "from step 13: KintsugiMetadata; shuffle True (train) or False (val/test)"
+    out: "iterator of UUID strings (RandomSampler without replacement, or SequentialSampler)"
+  - stage: data
+    file: kirad/datasets_and_dataloaders.py
+    function: KintsugiMetadata.__getitem__
+    in: "uuid (str) from UuidSampler (step 20). From here on the code runs inside trainer.fit (step 12): steps 21-23 once per recording, steps 24-35 once per batch"
+    out: "{uuid, label: {depression: {primary: phq}, anxiety: {primary: gad}}}; no kd key in this run"
+    note: "Labels are raw PHQ-9 (0-27) and GAD-7 (0-21) scores; binning happens only in the metrics."
+  - stage: data
+    file: kirad/datasets_and_dataloaders.py
+    function: KintsugiAudioDataset.__getitem__
+    in: "uuid (str), same as step 21"
+    out: 'raw audio windows: train [2, 480000] ("random_adjacent_pair", once many_to_one is off); val/test [W, 480000] ("all")'
+    note: "Train split with this config fails here with AttributeError on row.audio_filename: many_to_one merging (step 17) dropped it; set merge_rows_by_subject False to run it. Not resampled: a sample rate other than 16 kHz only logs a warning, windows become sr × 30 samples and forward_backbone (step 28) silently crops or pads them to 480000. Only channel 0 is kept. No augmentations configured."
+  - stage: data
+    file: kirad/datasets_and_dataloaders.py
+    function: get_window_starts
+    in: "from step 19 (the closure in step 22): method, audio_len in samples, 480000, max_overlap_frac 0.0"
+    out: "train: [s, s + 480000] with s random if audio >= 60 s, else fixed [0, len - 480000] (overlapping); val/test: 1 + (len - 480000) // 480000 starts spread evenly (np.linspace) from 0 to len - 480000"
+  - stage: data
+    file: kirad/dataset_utils.py
+    function: broadcast_collate
+    in: 'list of 2 items {"metadata": {uuid, label}, "audio": [W_i, 480000]}'
+    out: "{uuid [2], label.<task>.primary [2], length [2], features.audio [ΣW, 480000]}; train ΣW = 4"
+    note: "Windows are concatenated, not stacked; `length` is the only link from windows back to recordings."
+  - stage: model
+    file: kirad/base_models.py
+    function: MultiTaskOrdinalRegressionPLModule.training_step
+    in: "from step 24: batch dict, batch_idx"
+    out: 'step("train") dict with loss = total_loss; Lightning backprops; AdamW steps every accumulate_grad_batches batches'
+    note: "Lightning calls training_step, validation_step and test_step, not your code; validation_step runs the same path with split val."
+  - stage: model
+    file: kirad/base_models.py
+    function: MultiTaskOrdinalRegressionPLModule.step
+    in: 'split "train", batch dict from step 24 with uuid, features.audio [ΣW, 480000], label, length [B]'
+    out: "total_loss = sum of task.step losses (step 32); logs metrics/train/total_loss; returns a dict with uuid, features, label, length, loss"
+  - stage: model
+    file: research/stable/ordinal_regression_mtl_mar_2024/model.py
+    function: DepAnxClassifier.forward
+    in: 'from step 26: x {"audio": [ΣW, 480000]}, lengths [B]'
+    out: "({depression: [ΣW, 1], anxiety: [ΣW, 1]}, lengths)"
+  - stage: model
+    file: research/stable/ordinal_regression_mtl_mar_2024/model.py
+    function: DepAnxClassifier.forward_backbone
+    in: 'x["audio"] [ΣW, 480000], cached_backbone False'
+    out: '[ΣW, 768] one embedding per window; calls step 29 (log-mel), then step 30 (encoder)'
+  - stage: model
+    file: kirad/feature_extraction_whisper.py
+    function: WhisperTorchFeatureExtractor.forward
+    in: "from step 28: [ΣW, 480000] padded raw audio, float32 (fp16 autocast does not cast inputs)"
+    out: "[ΣW, 80, 3000] log-mel, float32 (the input dtype)"
+    note: "Computed in float64; each window is normalized to zero mean, unit variance, then shifted to the fixed IDEAL_LOGMEL_ENERGIES profile."
+  - stage: model
+    file: kirad/base_models.py
+    function: WhisperBackbone.forward
+    in: 'from step 29: {"audio": [ΣW, 80, 3000]}'
+    out: "last_hidden_state [ΣW, 1500, 768] -> mean over time -> [ΣW, 768]"
+    note: "LoRA (r 32, alpha 64) sits in this encoder; dropout, activation_dropout and encoder_layerdrop are 0.0 from hf_config."
+  - stage: model
+    file: kirad/base_models.py
+    function: MultitaskHead.forward
+    in: "from step 28: [ΣW, 768]"
+    out: "{depression, anxiety}: [ΣW, 1]; 768 -> 256 Mish -> 64, then 64 -> 128 Mish Dropout 0.4 -> 1 (no bias)"
+  - stage: loss
+    file: kirad/base_models.py
+    function: OrdinalRegressionPLModule.step
+    in: "from step 26, once per task: split, uuid, features = this task's [ΣW, 1] scores from step 27, label primary [B], length [B]"
+    out: "task loss (scalar); on val/test also accumulates uuid, mean score [B], variance [B], label [B]"
+    note: "This module's forward is the identity: the scores already come from the shared head."
+  - stage: loss
+    file: kirad/base_models.py
+    function: OrdinalRegressionPLModule.compute_and_log_loss
+    in: 'from step 32: logits [ΣW, 1], y {primary [B]}, lengths [B], split "train"'
+    out: "1.0 × CORAL + 40.0 × mean window-score variance; logs <task>/metrics/train/loss_exact28 (exact22 for anxiety)"
+    note: "Train: CORAL per window against the recording's label, then averaged. Val/test: CORAL of the per-recording mean score. No KD term (no score_targets_csv)."
+  - stage: loss
+    file: kirad/utils.py
+    function: average_and_variance_tensor_in_segments
+    in: "from step 33: logits [ΣW, 1], lengths [B]"
+    out: "mean [B, 1] and biased variance [B, 1] of the window scores per recording"
+  - stage: loss
+    file: kirad/losses.py
+    function: CORALLoss.forward
+    in: "from step 33: x [ΣW, 1] (train) or [B, 1] (val/test), y label [N]"
+    out: "[N] loss = sum over k of BCE(s + b_k, y > k); 27 biases (depression), 21 (anxiety), all weights 1"
+  - stage: metrics
+    file: kirad/base_models.py
+    function: MultiTaskOrdinalRegressionPLModule.on_validation_test_epoch_end
+    in: 'split "val", after Lightning has run all val batches through steps 26-35 (validation_step; step 32 accumulates scores) every val_check_interval batches (step 1)'
+    out: "runs steps 37-41 for each task, then logs the harmonic mean over tasks of each shared metric as metrics/val/..., e.g. metrics/val/sn_eq_sp@0%i"
+    note: "That combined metric picks the best checkpoint and drives early stopping."
+  - stage: metrics
+    file: kirad/base_models.py
+    function: OrdinalRegressionPLModule.on_validation_test_epoch_end
+    in: 'split "val"; accumulated uuids, mean scores, variances, labels [N_val] (deduplicated)'
+    out: "W&B artifact scores-<task>-val-<run_id>; tuned thresholds and Sn=Sp buffers; metrics dict"
+    note: "Lightning's sanity check (2 val batches before training) also runs this and tunes thresholds; only the W&B table is skipped."
+  - stage: metrics
+    file: kirad/base_models.py
+    function: OrdinalRegressionPLModule.quantize_labels
+    in: "labels [N_val] raw PHQ-9 / GAD-7"
+    out: "classes [N_val]: depression 0-2 (> 9, > 14), anxiety 0-3 (> 4, > 9, > 14)"
+  - stage: metrics
+    file: kirad/metrics.py
+    function: IndetSnSpArray.build
+    in: "thresholds None (<= 10,000 scores), y_score [N_val] float64, y_true = label > cut"
+    out: "Sn, Sp, indet_frac for every (lower, upper) pair of score midpoints; one array per binary cut"
+    note: "Pairs grow as N_val squared; above 10,000 scores a 10,000-point linspace grid is used instead."
+  - stage: metrics
+    file: kirad/ordinal_thresholding.py
+    function: OptimalOrdinalThresholdingViaDynamicProgramming.tune_thresholds
+    in: "scores [N_val], quantized labels [N_val]"
+    out: "self.thresholds (K - 1 values) that optimize the method's metric; returns that metric's optimal mean cost"
+    note: "Tuned on val only (5 DP methods; CORAL copies -b_k at cuts 9, 14 / 4, 9, 14). Stored as buffers in the checkpoint and reused on test."
+  - stage: metrics
+    file: kirad/base_models.py
+    function: OrdinalRegressionPLModule.log_ordinal_metrics
+    in: 'split "val", one IndetSnSpArray per cut, scores, labels'
+    out: "logs <task>/bucketed_metrics/val/auroc_>9@0%i, sn_eq_sp_>9@40%i, ... and <task>/metrics/val/sn_eq_sp@0%i"
+    note: "On test it also logs Sn, Sp and indet fraction at the thresholds tuned on val. Right after it, log_thresholding_metrics logs accuracy / F1 / recall etc. at the thresholds of each of the six tuning methods."
+  - stage: outputs
+    file: kirad/launcher_utils.py
+    function: DistributedModelCheckpoint.on_validation_end
+    in: "trainer, model; metric metrics/val/sn_eq_sp@0%i (mode max). Lightning calls this after each validation"
+    out: "writes chkpts/dam1_audio_concat_overlap_0.0_variance_weight_40.0/epoch-E_metric-0.000.ckpt (best) + last.ckpt"
+    note: "Runs after the val epoch end, so the checkpoint holds the val-tuned thresholds. The filename is a plain string, so `{monitor_loss_name}` is not a logged metric and Lightning writes 0.000: the name never shows the score. Uses torch.distributed barriers; /mnt/chkpts if JOB_NAME is set."
+  - stage: outputs
+    file: scripts/launcher.py
+    function: _log_datasets_to_wandb
+    in: "back in launcher (step 1) after run_training returns: LauncherConfig (train/val/test datasets built), LauncherLogger"
+    out: "W&B artifact dataset-<run_id> with train_dataset, val_dataset, test_dataset metadata tables"
+  - stage: outputs
+    file: kirad/utils.py
+    function: get_dataframe_with_scores
+    in: 'wandb_path "entity/project/run_id", split "val" or "test"'
+    out: "metadata DataFrame joined on uuid with scores_<task> and quantized labels from the W&B tables"
+    note: "After the run, not called by the launcher. Needs the `model-<run_id>` artifact (tag best) from WandbLogger(log_model=True). For val it reads scores version v{checkpoint epoch}, only right if validation runs once per epoch; with training_examples_per_eval (this config) pass scores_tag. Test reads v0."

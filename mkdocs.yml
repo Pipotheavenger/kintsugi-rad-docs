@@ -69,7 +69,9 @@ plugins:
 
 nav:
   - Home: index.md
-  - Code map: code-map.md
+  - Walkthrough (step by step): walkthrough.md
+  - Code map (by stage): code-map.md
+  - Files (function by function): files.md
   - Data contract: data-contract.md
   - Model, loss, metrics: model.md
   - Experiments (DAM 1/2/3): experiments.md

@@ -119,7 +119,17 @@ function openViewer(el) {
     if (a === "one") { scale = 1; x = 20; y = 20; apply(); }
     if (a === "close") close();
   });
-  fit();
+  // Start readable: fit if that keeps text legible, else 75–100% from the left (step 1 side).
+  const r = stage.getBoundingClientRect();
+  const fitScale = Math.min(r.width / w, r.height / h) * 0.96;
+  if (fitScale >= 0.75) {
+    fit();
+  } else {
+    scale = Math.min(1, Math.max(0.75, fitScale));
+    x = 24;
+    y = h * scale < r.height ? (r.height - h * scale) / 2 : 24;
+    apply();
+  }
 }
 
 document.querySelectorAll(".kmap").forEach((el) => {
