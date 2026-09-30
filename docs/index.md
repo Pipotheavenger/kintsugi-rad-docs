@@ -11,7 +11,9 @@ data from Congo, Colombia, Jordan and Ukraine.
 
 | You want | Go to |
 |---|---|
-| The order in which files call each other, with every function | [Code map](code-map.md) |
+| Follow one `train` run, function by function, with what goes in and out | [Walkthrough](walkthrough.md) |
+| Each stage as a numbered path, with side paths | [Code map](code-map.md) |
+| Every function of a file: calls / called by | [Files](files.md) |
 | What the CSV, WAVs and batches must look like | [Data contract](data-contract.md) |
 | Architecture, CORAL loss, thresholds, metrics | [Model, loss, metrics](model.md) |
 | DAM 1 vs 2 vs 3 and their hyperparameters | [Experiments](experiments.md) |
@@ -22,7 +24,7 @@ data from Congo, Colombia, Jordan and Ukraine.
 Every box and every function name links to its line in the code. Box descriptions are the
 first line of each docstring, read at build time: to change them, edit the code.
 
-## Files, in execution order
+## Stages, in execution order
 
 {{ codemap:overview }}
 
