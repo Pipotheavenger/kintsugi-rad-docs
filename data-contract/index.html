@@ -1,0 +1,1642 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="How kintsugi-rad works, file by file, with links to the documented code.">
+      
+      
+      
+      
+        <link rel="prev" href="../code-map/">
+      
+      
+        <link rel="next" href="../model/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Data contract - kintsugi-rad · code map</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/codemap.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data-contract" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="kintsugi-rad · code map" class="md-header__button md-logo" aria-label="kintsugi-rad · code map" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            kintsugi-rad · code map
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Data contract
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="amber"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="amber"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Pipotheavenger/kintsugi-rad-docs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kintsugi-rad-docs
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="kintsugi-rad · code map" class="md-nav__button md-logo" aria-label="kintsugi-rad · code map" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    kintsugi-rad · code map
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Pipotheavenger/kintsugi-rad-docs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kintsugi-rad-docs
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contract
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-csv-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata CSV columns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-30-s" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows (30 s)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-parameters-and-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data parameters and defaults
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data parameters and defaults">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#2-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2 · Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model, loss, metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../experiments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments (DAM 1/2/3)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hardcoded/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardcoded values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../limitations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Limitations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/launcher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    scripts/launcher.py
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/launcher_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    launcher_utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/datasets_and_dataloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    datasets_and_dataloaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/dataset_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dataset_utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/augmentations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    augmentations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/feature_extraction_whisper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    feature_extraction_whisper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/base_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    base_models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/losses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/ordinal_thresholding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ordinal_thresholding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/constants/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    constants
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/plotting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    plotting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STYLE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-csv-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata CSV columns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-30-s" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows (30 s)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-parameters-and-defaults" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data parameters and defaults
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data parameters and defaults">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#2-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2 · Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="data-contract">Data contract<a class="headerlink" href="#data-contract" title="Permanent link">&para;</a></h1>
+<p>What the code expects on disk and what reaches the model. All defaults below are read from
+<code>kirad/datasets_and_dataloaders.py</code> and <code>kirad/constants.py</code>.</p>
+<h2 id="metadata-csv-columns">Metadata CSV columns<a class="headerlink" href="#metadata-csv-columns" title="Permanent link">&para;</a></h2>
+<p>One CSV per split: with a CSV path, <code>dataset_splits</code>, <code>data_sources</code> and <code>dataset_fold</code> are
+ignored (<code>load_dataset</code>), so set <code>df_or_dataset_version</code> in the <code>train:</code> and <code>val_test:</code> (or
+<code>val:</code>/<code>test:</code>) sections of the config.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Needed for</th>
+<th>Used by</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>uuid</code></td>
+<td>always</td>
+<td>row index, sampler, W&amp;B score tables</td>
+<td>unique per recording</td>
+</tr>
+<tr>
+<td><code>filename</code></td>
+<td>always</td>
+<td><code>load_relative_dataset</code></td>
+<td>→ <code>&lt;audio_root&gt;/&lt;filename&gt;.wav</code>, <code>&lt;text_root&gt;/&lt;filename&gt;.json</code></td>
+</tr>
+<tr>
+<td><code>phq</code></td>
+<td>depression task</td>
+<td><code>label_column.depression</code></td>
+<td>PHQ-9 total, 0–27 (raw score, not a class)</td>
+</tr>
+<tr>
+<td><code>gad</code></td>
+<td>anxiety task</td>
+<td><code>label_column.anxiety</code></td>
+<td>GAD-7 total, 0–21</td>
+</tr>
+<tr>
+<td>duration column</td>
+<td>always</td>
+<td><code>num_windows</code>, min/max filter</td>
+<td>seconds after VAD; name set by <code>duration_column</code> (configs: <code>prompt_vad_trimmed_duration</code> train, <code>prompt_vad_cut_duration</code> val/test)</td>
+</tr>
+<tr>
+<td><code>asr_output_id</code></td>
+<td>text runs: DAM 2 (DAM 3 only indirectly, via the cached DAM 2 embeddings; <code>config_llma_dam3.0.yaml</code> reads text directly)</td>
+<td><code>KintsugiTextDataset.__getitem__</code></td>
+<td>must exist; value is not used for the path</td>
+</tr>
+<tr>
+<td><code>user</code> (+ demographics)</td>
+<td><code>merge_rows_by_subject</code> only</td>
+<td><code>merge_df_rows_by_subject</code></td>
+<td>rows merge when all present Kintsugi columns match</td>
+</tr>
+<tr>
+<td><code>scores_&lt;task&gt;</code></td>
+<td>knowledge distillation only</td>
+<td><code>KintsugiMetadata.__getitem__</code> → <code>label.&lt;task&gt;.kd</code></td>
+<td>from <code>score_targets_csv</code> (<code>uuid, scores_depression, scores_anxiety</code>); teacher-model scores, not human ratings</td>
+</tr>
+</tbody>
+</table>
+<h2 id="file-layout">File layout<a class="headerlink" href="#file-layout" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>&lt;audio_root&gt;/&lt;filename&gt;.wav    16 kHz (not resampled: only a warning), channel 0 used, VAD already applied
+&lt;text_root&gt;/&lt;filename&gt;.json    whisper_timestamped output; only its "text" field is read
+train.csv  val.csv  test.csv   metadata above (paths relative to the config folder or cwd)
+</code></pre></div>
+<p><code>audio_root</code> / <code>text_root</code> are <code>KintsugiMetadata</code> params (default: current directory). VAD is
+not in this repo; recordings shorter than <code>min_duration</code> (30 s) are dropped.</p>
+<h2 id="windows-30-s">Windows (30 s)<a class="headerlink" href="#windows-30-s" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Value</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Window length</td>
+<td>30 s = 480,000 samples at 16 kHz</td>
+<td><code>INFERENCE_WINDOW_SIZE</code>, <code>EXPECTED_SAMPLE_RATE</code></td>
+</tr>
+<tr>
+<td>Encoder positions per window</td>
+<td>1500 × 320 samples</td>
+<td><code>mar_2024/model.py</code> (<code>self.padding</code>)</td>
+</tr>
+<tr>
+<td>Log-mel per window</td>
+<td>80 bins × 3000 frames (hop 160, n_fft 400)</td>
+<td><code>WhisperTorchFeatureExtractor</code></td>
+</tr>
+<tr>
+<td>Windows per recording (<code>all</code>, overlap 0)</td>
+<td>⌊duration / 30⌋, spread from start to end (leftover audio falls between windows)</td>
+<td><code>get_window_starts</code></td>
+</tr>
+<tr>
+<td>… with <code>pad_last_chunk_to_full: true</code></td>
+<td>⌈duration / 30⌉ (last one zero-padded)</td>
+<td><code>get_preprocessor_with_audio_normalization</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>window_method</code>: <code>all</code> (every window; val/test), <code>single_random</code> (1 random), <code>single_start</code>
+(first 30 s), <code>random_adjacent_pair</code> (2 consecutive; DAM 1 train, feeds the variance loss).</p>
+<h2 id="batch">Batch<a class="headerlink" href="#batch" title="Permanent link">&para;</a></h2>
+<p><code>broadcast_collate</code> concatenates the windows of all B recordings; <code>length[i]</code> = windows of
+recording <em>i</em>, so ΣW = <code>length.sum()</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Shape</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>uuid</code></td>
+<td>[B]</td>
+<td>recording ids</td>
+</tr>
+<tr>
+<td><code>features.audio</code></td>
+<td>[ΣW, 480000]</td>
+<td>raw waveform (<code>preprocessor: false</code>, DAM 1 current config)</td>
+</tr>
+<tr>
+<td><code>features.audio</code></td>
+<td>[ΣW, 80, 3000]</td>
+<td>HF log-mel (<code>preprocessor: openai/whisper-small.en</code>, DAM 2/3)</td>
+</tr>
+<tr>
+<td><code>features.text.input_ids</code>, <code>.attention_mask</code></td>
+<td>[ΣW, L]</td>
+<td>tokens, tiled to every window; L = 512 for BERT</td>
+</tr>
+<tr>
+<td><code>features.backbone_cache</code></td>
+<td>[ΣW, D]</td>
+<td>cached embeddings, tiled like the other modalities (DAM 3 phase 1 target)</td>
+</tr>
+<tr>
+<td><code>label.&lt;task&gt;.primary</code></td>
+<td>[B]</td>
+<td>raw PHQ / GAD score</td>
+</tr>
+<tr>
+<td><code>label.&lt;task&gt;.kd</code></td>
+<td>[B]</td>
+<td>teacher score (only with <code>score_targets_csv</code>)</td>
+</tr>
+<tr>
+<td><code>length</code></td>
+<td>[B]</td>
+<td>windows per recording</td>
+</tr>
+</tbody>
+</table>
+<p><code>batch_size</code> in the config counts <strong>recordings</strong>, not windows.</p>
+<h2 id="data-parameters-and-defaults">Data parameters and defaults<a class="headerlink" href="#data-parameters-and-defaults" title="Permanent link">&para;</a></h2>
+<p><code>KintsugiMetadata</code> (config key <code>metadata=kirad.datasets_and_dataloaders.KintsugiMetadata</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>df_or_dataset_version</code></td>
+<td>required</td>
+<td>CSV path, DataFrame, <code>{metadata, audio_root, text_root}</code> or a private Kintsugi version name</td>
+</tr>
+<tr>
+<td><code>label_column</code></td>
+<td><code>{depression: phq, anxiety: gad}</code></td>
+<td>task → CSV column</td>
+</tr>
+<tr>
+<td><code>duration_column</code></td>
+<td><code>None</code></td>
+<td>effectively required (used for <code>num_windows</code>)</td>
+</tr>
+<tr>
+<td><code>min_duration</code> / <code>max_duration</code></td>
+<td>30 / <code>None</code> s</td>
+<td>inclusive filters</td>
+</tr>
+<tr>
+<td><code>window_duration</code></td>
+<td>30 s</td>
+<td>keep equal to the audio dataset's</td>
+</tr>
+<tr>
+<td><code>max_overlap_frac</code></td>
+<td>0.0</td>
+<td>keep equal to the audio dataset's</td>
+</tr>
+<tr>
+<td><code>fraction</code></td>
+<td>1.0</td>
+<td>subsample, <code>random_state=1</code></td>
+</tr>
+<tr>
+<td><code>merge_rows_by_subject</code></td>
+<td><code>False</code></td>
+<td><code>many_to_one</code> / <code>many_to_many</code> concatenate a subject's audio</td>
+</tr>
+<tr>
+<td><code>score_targets_csv</code></td>
+<td><code>None</code></td>
+<td>KD targets</td>
+</tr>
+<tr>
+<td><code>audio_root</code> / <code>text_root</code></td>
+<td><code>None</code> (cwd)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><code>KintsugiAudioDataset</code> (<code>audio=...</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Default</th>
+<th>Current configs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>preprocessor</code></td>
+<td><code>openai/whisper-small.en</code></td>
+<td>DAM 1: <code>false</code> (log-mel on GPU in the model)</td>
+</tr>
+<tr>
+<td><code>normalize_audio</code></td>
+<td><code>False</code></td>
+<td><code>true</code> (DC removal + peak scale to [-1, 1])</td>
+</tr>
+<tr>
+<td><code>normalize_features</code></td>
+<td><code>False</code></td>
+<td><code>true</code> in DAM 2/3</td>
+</tr>
+<tr>
+<td><code>window_method</code></td>
+<td><code>all</code></td>
+<td>train <code>random_adjacent_pair</code> (DAM 1) / <code>single_random</code> (DAM 2)</td>
+</tr>
+<tr>
+<td><code>window_duration</code>, <code>max_overlap_frac</code></td>
+<td>30, 0.0</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ideal_logmel_energies</code></td>
+<td><code>None</code></td>
+<td>DAM 2/3: <code>logmel_energies.npy</code> (not in repo)</td>
+</tr>
+<tr>
+<td><code>pad_last_chunk_to_full</code></td>
+<td><code>False</code></td>
+<td><code>true</code> in DAM 3</td>
+</tr>
+<tr>
+<td><code>augmentations</code></td>
+<td><code>()</code></td>
+<td><code>[{class_name, params, aug_prob}]</code>, e.g. RawBoost</td>
+</tr>
+</tbody>
+</table>
+<p><code>KintsugiTextDataset</code> (<code>text=...</code>): <code>preprocessor</code> <code>google-bert/bert-base-uncased</code>,
+<code>text_output_per_sample</code> <code>merge</code>, <code>prompt</code> <code>None</code> (LLaMA only), <code>max_tokens</code> <code>None</code>
+(tokenizer max). <code>KintsugiCacheDataset</code> (<code>backbone_cache=...</code>): <code>backbone_cache</code> required,
+<code>feat_start_idx</code> 0, <code>feat_end_idx</code> <code>None</code>.</p>
+<p>Per-split merge order: <code>default</code> &lt; <code>val_test</code> (val and test) &lt; <code>train</code>/<code>val</code>/<code>test</code>
+(<code>LauncherConfig.get_params_by_split</code>).</p>
+<h3 id="2-data">2 · Data<a class="headerlink" href="#2-data" title="Permanent link">&para;</a></h3>
+<p>The metadata CSV says which WAV files to open and what their labels are. Audio is cut into 30 s windows and turned into features; windows of all recordings in a batch are concatenated and <code>length</code> remembers where each recording ends.</p>
+<div class="kmap">
+flowchart LR
+  subgraph kirad_datasets_and_dataloaders_py___box[&quot;datasets_and_dataloaders.py&quot;]
+    direction TB
+    kirad_datasets_and_dataloaders_py__KintsugiMetadata[&quot;&lt;b&gt;KintsugiMetadata()&lt;/b&gt;&lt;br/&gt;Metadata table indexed by UUID:&lt;br/&gt;loads CSV, merges KD scores,&lt;br/&gt;filters by duration.&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiMetadata_preprocess_metadata[&quot;&lt;b&gt;KintsugiMetadata.preprocess_metadata()&lt;/b&gt;&lt;br/&gt;Join KD score targets, optionally&lt;br/&gt;merge rows per subject, count&lt;br/&gt;windows per recording.&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiMetadata_filter_metadata[&quot;&lt;b&gt;KintsugiMetadata.filter_metadata()&lt;/b&gt;&lt;br/&gt;Subsample `fraction` of rows, then&lt;br/&gt;drop recordings outside min/max&lt;br/&gt;duration (s).&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiMetadata___getitem__[&quot;&lt;b&gt;KintsugiMetadata.__getitem__()&lt;/b&gt;&lt;br/&gt;Return {uuid, label: {task:&lt;br/&gt;{primary: raw score, kd: teacher&lt;br/&gt;score}}} for one UUID.&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__[&quot;&lt;b&gt;KintsugiAudioDataset.__getitem__()&lt;/b&gt;&lt;br/&gt;Load, concatenate (channel 0),&lt;br/&gt;augment and window one recording&#x27;s&lt;br/&gt;audio.&quot;]
+    kirad_datasets_and_dataloaders_py__get_preprocessor_with_audio_normalization[&quot;&lt;b&gt;get_preprocessor_with_audio_normalization()&lt;/b&gt;&lt;br/&gt;Build the function audio [T] -›&lt;br/&gt;windows -› features used by&lt;br/&gt;KintsugiAudioDataset.&quot;]
+    kirad_datasets_and_dataloaders_py__get_window_starts[&quot;&lt;b&gt;get_window_starts()&lt;/b&gt;&lt;br/&gt;Start sample(s) of the windows cut&lt;br/&gt;from one recording, by&lt;br/&gt;window_method.&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiTextDataset___getitem__[&quot;&lt;b&gt;KintsugiTextDataset.__getitem__()&lt;/b&gt;&lt;br/&gt;Read the transcript JSON(s) of one&lt;br/&gt;recording and tokenize them.&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiCacheDataset[&quot;&lt;b&gt;KintsugiCacheDataset()&lt;/b&gt;&lt;br/&gt;Precomputed backbone features by&lt;br/&gt;UUID (DAM 3 teacher cache),&lt;br/&gt;optional dim slice.&quot;]
+    kirad_datasets_and_dataloaders_py__UuidSampler[&quot;&lt;b&gt;UuidSampler()&lt;/b&gt;&lt;br/&gt;Yields metadata UUIDs (shuffled&lt;br/&gt;for train, sequential for&lt;br/&gt;val/test) for the loader.&quot;]
+  end
+  subgraph kirad_dataset_utils_py___box[&quot;dataset_utils.py&quot;]
+    direction TB
+    kirad_dataset_utils_py__load_relative_dataset[&quot;&lt;b&gt;load_relative_dataset()&lt;/b&gt;&lt;br/&gt;Load metadata and add&lt;br/&gt;audio_filename / text_filename&lt;br/&gt;paths from the filename column.&quot;]
+    kirad_dataset_utils_py__load_dataset[&quot;&lt;b&gt;load_dataset()&lt;/b&gt;&lt;br/&gt;Return metadata as a DataFrame:&lt;br/&gt;pass-through, read a CSV path, or&lt;br/&gt;a Kintsugi version.&quot;]
+    kirad_dataset_utils_py__merge_df_rows_by_subject[&quot;&lt;b&gt;merge_df_rows_by_subject()&lt;/b&gt;&lt;br/&gt;Merge rows sharing user + labels +&lt;br/&gt;demographics into one row per&lt;br/&gt;subject.&quot;]
+    kirad_dataset_utils_py__broadcast_collate[&quot;&lt;b&gt;broadcast_collate()&lt;/b&gt;&lt;br/&gt;DataLoader collate: concat windows&lt;br/&gt;of all recordings; length =&lt;br/&gt;windows per recording.&quot;]
+  end
+  subgraph kirad_augmentations_py___box[&quot;augmentations.py&quot;]
+    direction TB
+    kirad_augmentations_py__RawBoost[&quot;&lt;b&gt;RawBoost()&lt;/b&gt;&lt;br/&gt;RawBoost waveform augmentation&lt;br/&gt;(LnL/ISD/SSI noise); default algo&lt;br/&gt;4 = all three.&quot;]
+  end
+  subgraph kirad_constants_py___box[&quot;constants.py&quot;]
+    direction TB
+    kirad_constants_py__DatasetFields[&quot;&lt;b&gt;DatasetFields()&lt;/b&gt;&lt;br/&gt;Key names of a batch dict: uuid,&lt;br/&gt;features, label.‹task›.primary/kd,&lt;br/&gt;length, loss.&quot;]
+  end
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata --&gt;|&quot;CSV&quot;| kirad_dataset_utils_py__load_relative_dataset
+  kirad_dataset_utils_py__load_relative_dataset --&gt; kirad_dataset_utils_py__load_dataset
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata --&gt; kirad_datasets_and_dataloaders_py__KintsugiMetadata_preprocess_metadata
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata_preprocess_metadata --&gt;|&quot;train only&quot;| kirad_dataset_utils_py__merge_df_rows_by_subject
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata_preprocess_metadata --&gt;|&quot;count windows&quot;| kirad_datasets_and_dataloaders_py__get_window_starts
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata --&gt; kirad_datasets_and_dataloaders_py__KintsugiMetadata_filter_metadata
+  kirad_datasets_and_dataloaders_py__UuidSampler --&gt;|&quot;uuid&quot;| kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__
+  kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__ --&gt;|&quot;optional&quot;| kirad_augmentations_py__RawBoost
+  kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__ --&gt; kirad_datasets_and_dataloaders_py__get_preprocessor_with_audio_normalization
+  kirad_datasets_and_dataloaders_py__get_preprocessor_with_audio_normalization --&gt;|&quot;cut&quot;| kirad_datasets_and_dataloaders_py__get_window_starts
+  kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__ --&gt; kirad_dataset_utils_py__broadcast_collate
+  kirad_datasets_and_dataloaders_py__KintsugiTextDataset___getitem__ --&gt; kirad_dataset_utils_py__broadcast_collate
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata___getitem__ --&gt;|&quot;labels&quot;| kirad_dataset_utils_py__broadcast_collate
+  kirad_dataset_utils_py__broadcast_collate --&gt;|&quot;batch keys&quot;| kirad_constants_py__DatasetFields
+  click kirad_datasets_and_dataloaders_py__KintsugiMetadata &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L70&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiMetadata_preprocess_metadata &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L207&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiMetadata_filter_metadata &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L251&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiMetadata___getitem__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L287&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L430&quot; _blank
+  click kirad_datasets_and_dataloaders_py__get_preprocessor_with_audio_normalization &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L769&quot; _blank
+  click kirad_datasets_and_dataloaders_py__get_window_starts &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L719&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiTextDataset___getitem__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L558&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiCacheDataset &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L611&quot; _blank
+  click kirad_datasets_and_dataloaders_py__UuidSampler &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L685&quot; _blank
+  click kirad_dataset_utils_py__load_relative_dataset &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L93&quot; _blank
+  click kirad_dataset_utils_py__load_dataset &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L48&quot; _blank
+  click kirad_dataset_utils_py__merge_df_rows_by_subject &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L625&quot; _blank
+  click kirad_dataset_utils_py__broadcast_collate &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L795&quot; _blank
+  click kirad_augmentations_py__RawBoost &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/augmentations.py#L152&quot; _blank
+  click kirad_constants_py__DatasetFields &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/constants.py#L150&quot; _blank
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>File</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L70"><code>KintsugiMetadata</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:70</code></td>
+<td>Metadata table indexed by UUID: loads CSV, merges KD scores, filters by duration.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L207"><code>KintsugiMetadata.preprocess_metadata</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:207</code></td>
+<td>Join KD score targets, optionally merge rows per subject, count windows per recording.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L251"><code>KintsugiMetadata.filter_metadata</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:251</code></td>
+<td>Subsample <code>fraction</code> of rows, then drop recordings outside min/max duration (s).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L287"><code>KintsugiMetadata.__getitem__</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:287</code></td>
+<td>Return {uuid, label: {task: {primary: raw score, kd: teacher score}}} for one UUID.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L430"><code>KintsugiAudioDataset.__getitem__</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:430</code></td>
+<td>Load, concatenate (channel 0), augment and window one recording's audio.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L769"><code>get_preprocessor_with_audio_normalization</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:769</code></td>
+<td>Build the function audio [T] -&gt; windows -&gt; features used by KintsugiAudioDataset.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L719"><code>get_window_starts</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:719</code></td>
+<td>Start sample(s) of the windows cut from one recording, by window_method.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L558"><code>KintsugiTextDataset.__getitem__</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:558</code></td>
+<td>Read the transcript JSON(s) of one recording and tokenize them.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L611"><code>KintsugiCacheDataset</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:611</code></td>
+<td>Precomputed backbone features by UUID (DAM 3 teacher cache), optional dim slice.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L685"><code>UuidSampler</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:685</code></td>
+<td>Yields metadata UUIDs (shuffled for train, sequential for val/test) for the loader.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L93"><code>load_relative_dataset</code></a></td>
+<td><code>kirad/dataset_utils.py:93</code></td>
+<td>Load metadata and add audio_filename / text_filename paths from the filename column.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L48"><code>load_dataset</code></a></td>
+<td><code>kirad/dataset_utils.py:48</code></td>
+<td>Return metadata as a DataFrame: pass-through, read a CSV path, or a Kintsugi version.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L625"><code>merge_df_rows_by_subject</code></a></td>
+<td><code>kirad/dataset_utils.py:625</code></td>
+<td>Merge rows sharing user + labels + demographics into one row per subject.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L795"><code>broadcast_collate</code></a></td>
+<td><code>kirad/dataset_utils.py:795</code></td>
+<td>DataLoader collate: concat windows of all recordings; length = windows per recording.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/augmentations.py#L152"><code>RawBoost</code></a></td>
+<td><code>kirad/augmentations.py:152</code></td>
+<td>RawBoost waveform augmentation (LnL/ISD/SSI noise); default algo 4 = all three.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/constants.py#L150"><code>DatasetFields</code></a></td>
+<td><code>kirad/constants.py:150</code></td>
+<td>Key names of a batch dict: uuid, features, label.&lt;task&gt;.primary/kd, length, loss.</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "content.code.copy", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/codemap.js" type="module"></script>
+      
+    
+  </body>
+</html>

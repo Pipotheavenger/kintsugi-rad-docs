@@ -1,0 +1,1454 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="How kintsugi-rad works, file by file, with links to the documented code.">
+      
+      
+      
+      
+        <link rel="prev" href="../model/">
+      
+      
+        <link rel="next" href="../hardcoded/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Experiments (DAM 1/2/3) - kintsugi-rad · code map</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/codemap.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#experiments-dam-1-2-3" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="kintsugi-rad · code map" class="md-header__button md-logo" aria-label="kintsugi-rad · code map" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            kintsugi-rad · code map
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Experiments (DAM 1/2/3)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="amber"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="amber"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Pipotheavenger/kintsugi-rad-docs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kintsugi-rad-docs
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="kintsugi-rad · code map" class="md-nav__button md-logo" aria-label="kintsugi-rad · code map" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    kintsugi-rad · code map
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Pipotheavenger/kintsugi-rad-docs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kintsugi-rad-docs
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code-map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model, loss, metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments (DAM 1/2/3)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments (DAM 1/2/3)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hyperparameters-current-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hyperparameters (current configs)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hyperparameters (current configs)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#7-the-other-versions-dam-2-dam-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7 · The other versions (DAM 2, DAM 3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hardcoded/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardcoded values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../limitations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Limitations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/launcher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    scripts/launcher.py
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/launcher_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    launcher_utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/datasets_and_dataloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    datasets_and_dataloaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/dataset_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dataset_utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/augmentations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    augmentations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/feature_extraction_whisper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    feature_extraction_whisper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/base_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    base_models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/losses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/ordinal_thresholding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ordinal_thresholding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/constants/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    constants
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/plotting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    plotting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STYLE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hyperparameters-current-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hyperparameters (current configs)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hyperparameters (current configs)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#7-the-other-versions-dam-2-dam-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7 · The other versions (DAM 2, DAM 3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="experiments-dam-1-2-3">Experiments: DAM 1, 2, 3<a class="headerlink" href="#experiments-dam-1-2-3" title="Permanent link">&para;</a></h1>
+<p>Each folder in <code>research/stable/</code> has a <code>model.py</code> and YAML configs; <code>model_path</code> in the YAML
+picks the class. <code>config.yaml</code> is the current config of each folder (dataset <code>v2.11.4</code>, 4
+sources); <code>config_dam*.yaml</code> and <code>config_llma_dam3.0.yaml</code> are older snapshots (<code>v2.9.4</code>, 2 sources). Only DAM 1 <code>config.yaml</code>
+validates as-is; see <a href="../limitations/">Limitations</a> 5–8.</p>
+<h2 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>DAM 1</th>
+<th>DAM 2</th>
+<th>DAM 3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Folder</td>
+<td><code>ordinal_regression_mtl_mar_2024</code></td>
+<td><code>ordinal_regression_mtl_jun_2024</code></td>
+<td><code>ordinal_regression_mtl_aug_2024</code></td>
+</tr>
+<tr>
+<td>Class</td>
+<td><code>DepAnxClassifier</code></td>
+<td><code>DepAnxClassifierWhisperBERT</code></td>
+<td>phase 1 <code>WhisperLLMA</code>, phase 2 <code>DepAnxClassifier</code></td>
+</tr>
+<tr>
+<td>Input at inference</td>
+<td>audio</td>
+<td>audio + transcript</td>
+<td>audio</td>
+</tr>
+<tr>
+<td>Backbone(s)</td>
+<td>Whisper small.en + LoRA</td>
+<td>Whisper + LoRA, BERT base uncased + LoRA</td>
+<td>frozen Whisper + frozen WhisperLLMA</td>
+</tr>
+<tr>
+<td>Head input</td>
+<td>768</td>
+<td>768 + 768 = 1536</td>
+<td>768 + 768 = 1536</td>
+</tr>
+<tr>
+<td>Log-mel</td>
+<td>in model, on GPU</td>
+<td>HF extractor in dataset</td>
+<td>HF extractor in dataset</td>
+</tr>
+<tr>
+<td>Trained</td>
+<td>encoder LoRA + conv1/conv2, head, CORAL biases</td>
+<td>both LoRAs, head, biases</td>
+<td>phase 1: Whisper (MSE to BERT half <code>[768:1536]</code> of a cached DAM 2); phase 2: head + biases only</td>
+</tr>
+<tr>
+<td>Needs ASR</td>
+<td>no</td>
+<td>yes (<code>scripts/run_whisper_asr.py</code>)</td>
+<td>phase 1 only (via DAM 2 cache)</td>
+</tr>
+</tbody>
+</table>
+<p>Other classes in <code>jun_2024/model.py</code>: <code>DepAnxClassifierWhisperLLAMA</code> (Whisper + LLaMA 3.2 3B
+cut to 15 layers, <code>config_llama.yaml</code>) and <code>DepAnxClassifierLLAMA</code> (text only).</p>
+<h2 id="hyperparameters-current-configs">Hyperparameters (current configs)<a class="headerlink" href="#hyperparameters-current-configs" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>DAM 1 <code>config.yaml</code></th>
+<th>DAM 2 <code>config.yaml</code></th>
+<th>DAM 3 ph. 1 <code>config_llma.yaml</code></th>
+<th>DAM 3 ph. 2 <code>config.yaml</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>seed</td>
+<td>44</td>
+<td>44</td>
+<td>42</td>
+<td>46</td>
+</tr>
+<tr>
+<td>batch_size / effective</td>
+<td>2 / 128</td>
+<td>2 / 128</td>
+<td>1 / 64</td>
+<td>1 / 4</td>
+</tr>
+<tr>
+<td>max_epochs / patience</td>
+<td>32 / 10</td>
+<td>32 / 10</td>
+<td>18 / 10</td>
+<td>5 / 10</td>
+</tr>
+<tr>
+<td>val every</td>
+<td>16,000 recordings</td>
+<td>epoch</td>
+<td>epoch</td>
+<td>16,000 recordings</td>
+</tr>
+<tr>
+<td>monitor</td>
+<td>max <code>sn_eq_sp@0%i</code></td>
+<td>max <code>sn_eq_sp@0%i</code></td>
+<td>min <code>total_loss</code></td>
+<td>max <code>sn_eq_sp@0%i</code></td>
+</tr>
+<tr>
+<td>lr backbone / head</td>
+<td>1.6e-4 / 8e-4</td>
+<td>1.6e-4 / 8e-4</td>
+<td>4e-5 / —</td>
+<td>unused (frozen) / 4e-4</td>
+</tr>
+<tr>
+<td>weight decay</td>
+<td>1e-3</td>
+<td>1e-3</td>
+<td>1e-3</td>
+<td>1e-3</td>
+</tr>
+<tr>
+<td>MultiStepLR γ, milestones</td>
+<td>0.5, [20, 26]</td>
+<td>0.5, [20, 26]</td>
+<td>0.5, [14]</td>
+<td>0.5, [20, 26]</td>
+</tr>
+<tr>
+<td>LoRA (Whisper)</td>
+<td>r 32, α 64, drop 0.4</td>
+<td>same (+ BERT same)</td>
+<td>none (full fine-tune)</td>
+<td>r 32, α 64 (frozen)</td>
+</tr>
+<tr>
+<td>shared / task proj / dropout</td>
+<td>[256, 64] / 128 / 0.4</td>
+<td>same</td>
+<td>—</td>
+<td>same</td>
+</tr>
+<tr>
+<td>targets</td>
+<td>exact28 / exact22</td>
+<td>exact28 / exact22</td>
+<td>—</td>
+<td>exact28 / exact22</td>
+</tr>
+<tr>
+<td>score_variance weight</td>
+<td>40</td>
+<td>0</td>
+<td>—</td>
+<td>0</td>
+</tr>
+<tr>
+<td>train window_method</td>
+<td><code>random_adjacent_pair</code></td>
+<td><code>single_random</code></td>
+<td><code>all</code></td>
+<td><code>all</code></td>
+</tr>
+<tr>
+<td>val/test window_method</td>
+<td><code>all</code></td>
+<td><code>all</code></td>
+<td><code>all</code></td>
+<td><code>all</code></td>
+</tr>
+<tr>
+<td>merge_rows_by_subject (train)</td>
+<td><code>many_to_one</code></td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td>audio <code>preprocessor</code></td>
+<td><code>false</code></td>
+<td><code>openai/whisper-small.en</code></td>
+<td>same</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>ideal_logmel_energies</code></td>
+<td>built-in constant</td>
+<td><code>logmel_energies.npy</code></td>
+<td>same</td>
+<td>same</td>
+</tr>
+<tr>
+<td>other</td>
+<td></td>
+<td>text: <code>bert-base-uncased</code></td>
+<td><code>max_duration</code> 90 s (train), <code>feat_start_idx</code> 768</td>
+<td><code>pad_last_chunk_to_full</code></td>
+</tr>
+</tbody>
+</table>
+<p>Phase 2 loads WhisperLLMA from <code>llma_ckpt</code> (a W&amp;B URL). Its audio Whisper gets trained weights only
+from <code>ckpt_path</code>, which is empty in <code>config.yaml</code>, so it runs as the pretrained HF encoder.</p>
+<p>Tasks in every config: <code>depression</code> (label <code>phq</code>, 28 classes) and <code>anxiety</code> (label <code>gad</code>, 22
+classes). Indeterminate budgets default to (0.0, 0.4) in every <code>model.py</code>.</p>
+<h3 id="7-the-other-versions-dam-2-dam-3">7 · The other versions (DAM 2, DAM 3)<a class="headerlink" href="#7-the-other-versions-dam-2-dam-3" title="Permanent link">&para;</a></h3>
+<p>DAM 2 adds a text backbone over the transcript. DAM 3 first trains a Whisper to imitate BERT's vector from audio (WhisperLLMA), then freezes it and trains only the head.</p>
+<div class="kmap">
+flowchart LR
+  subgraph research_stable_ordinal_regression_mtl_jun_2024_model_py___box[&quot;mtl_jun_2024/model.py&quot;]
+    direction TB
+    research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierBase[&quot;&lt;b&gt;DepAnxClassifierBase()&lt;/b&gt;&lt;br/&gt;Concatenate embeddings of several&lt;br/&gt;backbones (ModuleDict order) and&lt;br/&gt;feed a MultitaskHead.&quot;]
+    research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperBERT[&quot;&lt;b&gt;DepAnxClassifierWhisperBERT()&lt;/b&gt;&lt;br/&gt;DAM 2: Whisper audio + BERT&lt;br/&gt;transcript embeddings (768 + 768)&lt;br/&gt;-› multitask head.&quot;]
+    research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperLLAMA[&quot;&lt;b&gt;DepAnxClassifierWhisperLLAMA()&lt;/b&gt;&lt;br/&gt;Whisper audio + LLaMA transcript&lt;br/&gt;embeddings concatenated -›&lt;br/&gt;multitask head.&quot;]
+    research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierLLAMA[&quot;&lt;b&gt;DepAnxClassifierLLAMA()&lt;/b&gt;&lt;br/&gt;Text only: LLaMA transcript&lt;br/&gt;embedding -› multitask head.&quot;]
+  end
+  subgraph research_stable_ordinal_regression_mtl_aug_2024_model_py___box[&quot;mtl_aug_2024/model.py&quot;]
+    direction TB
+    research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA[&quot;&lt;b&gt;WhisperLLMA()&lt;/b&gt;&lt;br/&gt;DAM 3 phase 1: Whisper encoder&lt;br/&gt;trained to predict a cached text&lt;br/&gt;embedding from audio.&quot;]
+    research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA_step[&quot;&lt;b&gt;WhisperLLMA.step()&lt;/b&gt;&lt;br/&gt;MSE between per-recording Whisper&lt;br/&gt;embedding and the cached teacher&lt;br/&gt;embedding.&quot;]
+    research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier[&quot;&lt;b&gt;DepAnxClassifier()&lt;/b&gt;&lt;br/&gt;DAM 3: frozen Whisper + frozen&lt;br/&gt;WhisperLLMA embeddings (768 + 768)&lt;br/&gt;-› trainable head.&quot;]
+    research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier_forward_backbone[&quot;&lt;b&gt;DepAnxClassifier.forward_backbone()&lt;/b&gt;&lt;br/&gt;No-grad Whisper + WhisperLLMA,&lt;br/&gt;averaged per recording -› [B,&lt;br/&gt;1536]; lengths set to 1.&quot;]
+  end
+  subgraph kirad_base_models_py___box[&quot;base_models.py&quot;]
+    direction TB
+    kirad_base_models_py__BERTBackbone[&quot;&lt;b&gt;BERTBackbone()&lt;/b&gt;&lt;br/&gt;BERT on transcript tokens; returns&lt;br/&gt;the pooler output [ΣW, 768] (DAM 2&lt;br/&gt;text branch).&quot;]
+    kirad_base_models_py__LLAMABackbone[&quot;&lt;b&gt;LLAMABackbone()&lt;/b&gt;&lt;br/&gt;LLaMA cut to num_layers layers;&lt;br/&gt;embeds text as the last real&lt;br/&gt;token&#x27;s hidden state.&quot;]
+    kirad_base_models_py__Wav2Vec2Backbone[&quot;&lt;b&gt;Wav2Vec2Backbone()&lt;/b&gt;&lt;br/&gt;wav2vec2 encoder on raw audio,&lt;br/&gt;mean-pooled (not used by the&lt;br/&gt;stable DAM configs).&quot;]
+  end
+  research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperBERT --&gt; research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierBase
+  research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperBERT --&gt;|&quot;text&quot;| kirad_base_models_py__BERTBackbone
+  research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperLLAMA --&gt; kirad_base_models_py__LLAMABackbone
+  research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierLLAMA --&gt; kirad_base_models_py__LLAMABackbone
+  research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA --&gt;|&quot;phase 1: MSE&quot;| research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA_step
+  research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA --&gt;|&quot;frozen&quot;| research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier
+  research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier --&gt; research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier_forward_backbone
+  click research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierBase &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L54&quot; _blank
+  click research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperBERT &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L138&quot; _blank
+  click research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperLLAMA &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L165&quot; _blank
+  click research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierLLAMA &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L185&quot; _blank
+  click research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L32&quot; _blank
+  click research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA_step &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L101&quot; _blank
+  click research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L144&quot; _blank
+  click research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier_forward_backbone &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L212&quot; _blank
+  click kirad_base_models_py__BERTBackbone &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L877&quot; _blank
+  click kirad_base_models_py__LLAMABackbone &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L899&quot; _blank
+  click kirad_base_models_py__Wav2Vec2Backbone &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L848&quot; _blank
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>File</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L54"><code>DepAnxClassifierBase</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_jun_2024/model.py:54</code></td>
+<td>Concatenate embeddings of several backbones (ModuleDict order) and feed a MultitaskHead.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L138"><code>DepAnxClassifierWhisperBERT</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_jun_2024/model.py:138</code></td>
+<td>DAM 2: Whisper audio + BERT transcript embeddings (768 + 768) -&gt; multitask head.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L165"><code>DepAnxClassifierWhisperLLAMA</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_jun_2024/model.py:165</code></td>
+<td>Whisper audio + LLaMA transcript embeddings concatenated -&gt; multitask head.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L185"><code>DepAnxClassifierLLAMA</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_jun_2024/model.py:185</code></td>
+<td>Text only: LLaMA transcript embedding -&gt; multitask head.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L32"><code>WhisperLLMA</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_aug_2024/model.py:32</code></td>
+<td>DAM 3 phase 1: Whisper encoder trained to predict a cached text embedding from audio.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L101"><code>WhisperLLMA.step</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_aug_2024/model.py:101</code></td>
+<td>MSE between per-recording Whisper embedding and the cached teacher embedding.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L144"><code>DepAnxClassifier</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_aug_2024/model.py:144</code></td>
+<td>DAM 3: frozen Whisper + frozen WhisperLLMA embeddings (768 + 768) -&gt; trainable head.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L212"><code>DepAnxClassifier.forward_backbone</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_aug_2024/model.py:212</code></td>
+<td>No-grad Whisper + WhisperLLMA, averaged per recording -&gt; [B, 1536]; lengths set to 1.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L877"><code>BERTBackbone</code></a></td>
+<td><code>kirad/base_models.py:877</code></td>
+<td>BERT on transcript tokens; returns the pooler output [ΣW, 768] (DAM 2 text branch).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L899"><code>LLAMABackbone</code></a></td>
+<td><code>kirad/base_models.py:899</code></td>
+<td>LLaMA cut to num_layers layers; embeds text as the last real token's hidden state.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L848"><code>Wav2Vec2Backbone</code></a></td>
+<td><code>kirad/base_models.py:848</code></td>
+<td>wav2vec2 encoder on raw audio, mean-pooled (not used by the stable DAM configs).</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "content.code.copy", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/codemap.js" type="module"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,2239 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="How kintsugi-rad works, file by file, with links to the documented code.">
+      
+      
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../data-contract/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Code map - kintsugi-rad · code map</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/codemap.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#code-map" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="kintsugi-rad · code map" class="md-header__button md-logo" aria-label="kintsugi-rad · code map" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            kintsugi-rad · code map
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Code map
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="amber"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="amber"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Pipotheavenger/kintsugi-rad-docs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kintsugi-rad-docs
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="kintsugi-rad · code map" class="md-nav__button md-logo" aria-label="kintsugi-rad · code map" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    kintsugi-rad · code map
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Pipotheavenger/kintsugi-rad-docs" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kintsugi-rad-docs
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code map
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code map
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-whole-story-file-by-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The whole story, file by file
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The whole story, file by file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#0-before-training-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0 · Before training (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-launch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1 · Launch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2 · Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-model-dam-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3 · Model (DAM 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4 · Loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-thresholds-and-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5 · Thresholds and metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-outputs-and-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6 · Outputs and analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-the-other-versions-dam-2-dam-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7 · The other versions (DAM 2, DAM 3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model, loss, metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../experiments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments (DAM 1/2/3)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hardcoded/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hardcoded values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../limitations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Limitations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/launcher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    scripts/launcher.py
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/launcher_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    launcher_utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/datasets_and_dataloaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    datasets_and_dataloaders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/dataset_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dataset_utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/augmentations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    augmentations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/feature_extraction_whisper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    feature_extraction_whisper
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/base_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    base_models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/losses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/ordinal_thresholding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ordinal_thresholding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/constants/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    constants
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/plotting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    plotting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STYLE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-whole-story-file-by-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The whole story, file by file
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The whole story, file by file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#0-before-training-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0 · Before training (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-launch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1 · Launch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2 · Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-model-dam-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3 · Model (DAM 1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-loss" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4 · Loss
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-thresholds-and-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5 · Thresholds and metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-outputs-and-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6 · Outputs and analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-the-other-versions-dam-2-dam-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7 · The other versions (DAM 2, DAM 3)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="code-map">Code map<a class="headerlink" href="#code-map" title="Permanent link">&para;</a></h1>
+<p>Eight stages, from command to report. Click a box to open the code; arrow labels name what is passed.
+Stage 0 is offline; stage 3 is DAM 1; stage 7 shows what DAM 2/3 change.</p>
+<h2 id="the-whole-story-file-by-file">The whole story, file by file<a class="headerlink" href="#the-whole-story-file-by-file" title="Permanent link">&para;</a></h2>
+<div class="kmap">
+flowchart TB
+  subgraph prep[&quot;0 · Before training (optional)&quot;]
+    direction LR
+    prepscripts_run_whisper_asr_py__[&quot;&lt;b&gt;run_whisper_asr.py&lt;/b&gt;&lt;br/&gt;Offline transcription of one&lt;br/&gt;WAV into the transcript JSON&lt;br/&gt;used by text models.&quot;]
+  end
+  subgraph launch[&quot;1 · Launch&quot;]
+    direction LR
+    launchscripts_launcher_py__[&quot;&lt;b&gt;launcher.py&lt;/b&gt;&lt;br/&gt;Command-line entry point:&lt;br/&gt;`python scripts/launcher.py&lt;br/&gt;‹mode› config.yaml`.&quot;]
+    launchkirad_launcher_utils_py__[&quot;&lt;b&gt;launcher_utils.py&lt;/b&gt;&lt;br/&gt;Turns the YAML config into&lt;br/&gt;objects: params, model,&lt;br/&gt;datasets, loaders, W&amp;B logger.&quot;]
+    launchkirad_utils_py__[&quot;&lt;b&gt;utils.py&lt;/b&gt;&lt;br/&gt;Shared helpers: per-recording&lt;br/&gt;averaging, W&amp;B artifact I/O,&lt;br/&gt;dynamic imports, analysis.&quot;]
+  end
+  subgraph data[&quot;2 · Data&quot;]
+    direction LR
+    datakirad_datasets_and_dataloaders_py__[&quot;&lt;b&gt;datasets_and_dataloaders.py&lt;/b&gt;&lt;br/&gt;Data stage: metadata table,&lt;br/&gt;per-modality datasets (audio,&lt;br/&gt;text, cache) and UUID sampler.&quot;]
+    datakirad_dataset_utils_py__[&quot;&lt;b&gt;dataset_utils.py&lt;/b&gt;&lt;br/&gt;Data stage helpers: load&lt;br/&gt;metadata CSVs, build file&lt;br/&gt;paths, merge rows, collate&lt;br/&gt;batches.&quot;]
+    datakirad_augmentations_py__[&quot;&lt;b&gt;augmentations.py&lt;/b&gt;&lt;br/&gt;Data stage (optional):&lt;br/&gt;RawBoost waveform&lt;br/&gt;augmentation, applied in&lt;br/&gt;KintsugiAudioDataset.&quot;]
+    datakirad_constants_py__[&quot;&lt;b&gt;constants.py&lt;/b&gt;&lt;br/&gt;Global constants: sample rate,&lt;br/&gt;score ranges, label cutoffs,&lt;br/&gt;batch field names.&quot;]
+  end
+  subgraph model[&quot;3 · Model (DAM 1)&quot;]
+    direction LR
+    modelresearch_stable_ordinal_regression_mtl_mar_2024_model_py__[&quot;&lt;b&gt;mtl_mar_2024/model.py&lt;/b&gt;&lt;br/&gt;DAM 1 model (stage: model):&lt;br/&gt;audio-only depression/anxiety&lt;br/&gt;classifier.&quot;]
+    modelkirad_feature_extraction_whisper_py__[&quot;&lt;b&gt;feature_extraction_whisper.py&lt;/b&gt;&lt;br/&gt;Model stage: raw audio windows&lt;br/&gt;-› Whisper log-mel features,&lt;br/&gt;computed on the GPU in torch.&quot;]
+    modelkirad_base_models_py__[&quot;&lt;b&gt;base_models.py&lt;/b&gt;&lt;br/&gt;Model building blocks.&quot;]
+    modelkirad_constants_py__[&quot;&lt;b&gt;constants.py&lt;/b&gt;&lt;br/&gt;Global constants: sample rate,&lt;br/&gt;score ranges, label cutoffs,&lt;br/&gt;batch field names.&quot;]
+  end
+  subgraph loss[&quot;4 · Loss&quot;]
+    direction LR
+    losskirad_base_models_py__[&quot;&lt;b&gt;base_models.py&lt;/b&gt;&lt;br/&gt;Model building blocks.&quot;]
+    losskirad_losses_py__[&quot;&lt;b&gt;losses.py&lt;/b&gt;&lt;br/&gt;CORAL ordinal-regression loss&lt;br/&gt;(stage: loss).&quot;]
+    losskirad_utils_py__[&quot;&lt;b&gt;utils.py&lt;/b&gt;&lt;br/&gt;Shared helpers: per-recording&lt;br/&gt;averaging, W&amp;B artifact I/O,&lt;br/&gt;dynamic imports, analysis.&quot;]
+  end
+  subgraph metrics[&quot;5 · Thresholds and metrics&quot;]
+    direction LR
+    metricskirad_base_models_py__[&quot;&lt;b&gt;base_models.py&lt;/b&gt;&lt;br/&gt;Model building blocks.&quot;]
+    metricskirad_ordinal_thresholding_py__[&quot;&lt;b&gt;ordinal_thresholding.py&lt;/b&gt;&lt;br/&gt;Tune ordinal thresholds that&lt;br/&gt;turn continuous scores into&lt;br/&gt;severity classes.&quot;]
+    metricskirad_metrics_py__[&quot;&lt;b&gt;metrics.py&lt;/b&gt;&lt;br/&gt;Binary Sn/Sp metrics with an&lt;br/&gt;indeterminate band, plus a&lt;br/&gt;DDP-safe score accumulator.&quot;]
+  end
+  subgraph outputs[&quot;6 · Outputs and analysis&quot;]
+    direction LR
+    outputskirad_launcher_utils_py__[&quot;&lt;b&gt;launcher_utils.py&lt;/b&gt;&lt;br/&gt;Turns the YAML config into&lt;br/&gt;objects: params, model,&lt;br/&gt;datasets, loaders, W&amp;B logger.&quot;]
+    outputsscripts_launcher_py__[&quot;&lt;b&gt;launcher.py&lt;/b&gt;&lt;br/&gt;Command-line entry point:&lt;br/&gt;`python scripts/launcher.py&lt;br/&gt;‹mode› config.yaml`.&quot;]
+    outputskirad_utils_py__[&quot;&lt;b&gt;utils.py&lt;/b&gt;&lt;br/&gt;Shared helpers: per-recording&lt;br/&gt;averaging, W&amp;B artifact I/O,&lt;br/&gt;dynamic imports, analysis.&quot;]
+    outputskirad_plotting_py__[&quot;&lt;b&gt;plotting.py&lt;/b&gt;&lt;br/&gt;Matplotlib plots of the&lt;br/&gt;indeterminate-band trade-off&lt;br/&gt;for one task&#x27;s scores.&quot;]
+  end
+  subgraph variants[&quot;7 · The other versions (DAM 2, DAM 3)&quot;]
+    direction LR
+    variantsresearch_stable_ordinal_regression_mtl_jun_2024_model_py__[&quot;&lt;b&gt;mtl_jun_2024/model.py&lt;/b&gt;&lt;br/&gt;DAM 2 models (stage: model):&lt;br/&gt;audio + transcript text&lt;br/&gt;classifiers.&quot;]
+    variantsresearch_stable_ordinal_regression_mtl_aug_2024_model_py__[&quot;&lt;b&gt;mtl_aug_2024/model.py&lt;/b&gt;&lt;br/&gt;DAM 3 models (stage: model):&lt;br/&gt;audio-only model that imitates&lt;br/&gt;DAM 2&#x27;s text branch.&quot;]
+    variantskirad_base_models_py__[&quot;&lt;b&gt;base_models.py&lt;/b&gt;&lt;br/&gt;Model building blocks.&quot;]
+  end
+  prepscripts_run_whisper_asr_py__ --&gt;|&quot;transcript JSON&quot;| datakirad_datasets_and_dataloaders_py__
+  launchscripts_launcher_py__ --&gt;|&quot;builds LauncherConfig&quot;| launchkirad_launcher_utils_py__
+  launchkirad_launcher_utils_py__ --&gt;|&quot;import_object&quot;| launchkirad_utils_py__
+  launchkirad_launcher_utils_py__ --&gt;|&quot;get_dataset&quot;| datakirad_datasets_and_dataloaders_py__
+  datakirad_datasets_and_dataloaders_py__ --&gt;|&quot;CSV load, collate&quot;| datakirad_dataset_utils_py__
+  datakirad_datasets_and_dataloaders_py__ --&gt;|&quot;optional&quot;| datakirad_augmentations_py__
+  datakirad_dataset_utils_py__ --&gt;|&quot;batch keys&quot;| datakirad_constants_py__
+  datakirad_dataset_utils_py__ --&gt;|&quot;batch&quot;| modelresearch_stable_ordinal_regression_mtl_mar_2024_model_py__
+  modelresearch_stable_ordinal_regression_mtl_mar_2024_model_py__ --&gt;|&quot;log-mel&quot;| modelkirad_feature_extraction_whisper_py__
+  modelresearch_stable_ordinal_regression_mtl_mar_2024_model_py__ --&gt;|&quot;backbone + head&quot;| modelkirad_base_models_py__
+  modelresearch_stable_ordinal_regression_mtl_mar_2024_model_py__ --&gt;|&quot;cutoffs (LOSS/METRIC_TARGET_CUTOFFS)&quot;| modelkirad_constants_py__
+  modelkirad_base_models_py__ --&gt;|&quot;scores&quot;| losskirad_base_models_py__
+  losskirad_base_models_py__ --&gt;|&quot;CORAL&quot;| losskirad_losses_py__
+  losskirad_base_models_py__ --&gt;|&quot;per-recording mean&quot;| losskirad_utils_py__
+  losskirad_base_models_py__ --&gt;|&quot;each validation&quot;| metricskirad_base_models_py__
+  metricskirad_base_models_py__ --&gt;|&quot;tune&quot;| metricskirad_ordinal_thresholding_py__
+  metricskirad_base_models_py__ --&gt;|&quot;Sn / Sp&quot;| metricskirad_metrics_py__
+  metricskirad_base_models_py__ --&gt;|&quot;checkpoint&quot;| outputskirad_launcher_utils_py__
+  outputskirad_launcher_utils_py__ --&gt;|&quot;W&amp;B artifacts&quot;| outputskirad_utils_py__
+  outputskirad_utils_py__ --&gt; outputskirad_plotting_py__
+  launchscripts_launcher_py__ --&gt;|&quot;cache mode&quot;| outputskirad_utils_py__
+  modelresearch_stable_ordinal_regression_mtl_mar_2024_model_py__ --&gt;|&quot;same head, + text&quot;| variantsresearch_stable_ordinal_regression_mtl_jun_2024_model_py__
+  variantsresearch_stable_ordinal_regression_mtl_jun_2024_model_py__ --&gt;|&quot;teacher&quot;| variantsresearch_stable_ordinal_regression_mtl_aug_2024_model_py__
+  click prepscripts_run_whisper_asr_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/run_whisper_asr.py#L1&quot; _blank
+  click launchscripts_launcher_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L1&quot; _blank
+  click launchkirad_launcher_utils_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L1&quot; _blank
+  click launchkirad_utils_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L1&quot; _blank
+  click datakirad_datasets_and_dataloaders_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L1&quot; _blank
+  click datakirad_dataset_utils_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L1&quot; _blank
+  click datakirad_augmentations_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/augmentations.py#L1&quot; _blank
+  click datakirad_constants_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/constants.py#L1&quot; _blank
+  click modelresearch_stable_ordinal_regression_mtl_mar_2024_model_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_mar_2024/model.py#L1&quot; _blank
+  click modelkirad_feature_extraction_whisper_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/feature_extraction_whisper.py#L1&quot; _blank
+  click modelkirad_base_models_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L1&quot; _blank
+  click modelkirad_constants_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/constants.py#L1&quot; _blank
+  click losskirad_base_models_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L1&quot; _blank
+  click losskirad_losses_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/losses.py#L1&quot; _blank
+  click losskirad_utils_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L1&quot; _blank
+  click metricskirad_base_models_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L1&quot; _blank
+  click metricskirad_ordinal_thresholding_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/ordinal_thresholding.py#L1&quot; _blank
+  click metricskirad_metrics_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/metrics.py#L1&quot; _blank
+  click outputskirad_launcher_utils_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L1&quot; _blank
+  click outputsscripts_launcher_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L1&quot; _blank
+  click outputskirad_utils_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L1&quot; _blank
+  click outputskirad_plotting_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/plotting.py#L1&quot; _blank
+  click variantsresearch_stable_ordinal_regression_mtl_jun_2024_model_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L1&quot; _blank
+  click variantsresearch_stable_ordinal_regression_mtl_aug_2024_model_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L1&quot; _blank
+  click variantskirad_base_models_py__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L1&quot; _blank
+</div>
+
+<h3 id="0-before-training-optional">0 · Before training (optional)<a class="headerlink" href="#0-before-training-optional" title="Permanent link">&para;</a></h3>
+<p>Transcripts are produced once, outside training, and only matter for runs that read text: DAM 2, and config_llma_dam3.0.yaml. Current DAM 3 uses them only indirectly, through the cached DAM 2 embeddings.</p>
+<div class="kmap">
+flowchart LR
+  subgraph scripts_run_whisper_asr_py___box[&quot;run_whisper_asr.py&quot;]
+    direction TB
+    scripts_run_whisper_asr_py__run_whisper_asr[&quot;&lt;b&gt;run_whisper_asr()&lt;/b&gt;&lt;br/&gt;Transcribe a 16 kHz WAV (optional&lt;br/&gt;start/end in s) with Whisper&lt;br/&gt;large-v3 to JSON.&quot;]
+  end
+  click scripts_run_whisper_asr_py__run_whisper_asr &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/run_whisper_asr.py#L18&quot; _blank
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>File</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/run_whisper_asr.py#L18"><code>run_whisper_asr</code></a></td>
+<td><code>scripts/run_whisper_asr.py:18</code></td>
+<td>Transcribe a 16 kHz WAV (optional start/end in s) with Whisper large-v3 to JSON.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1-launch">1 · Launch<a class="headerlink" href="#1-launch" title="Permanent link">&para;</a></h3>
+<p>One command reads a YAML config, validates it, builds the model and the data loaders, and hands everything to a PyTorch Lightning Trainer.</p>
+<div class="kmap">
+flowchart LR
+  subgraph scripts_launcher_py___box[&quot;launcher.py&quot;]
+    direction TB
+    scripts_launcher_py__launcher[&quot;&lt;b&gt;launcher()&lt;/b&gt;&lt;br/&gt;Run one mode&lt;br/&gt;(train/evaluate/cache/compile) end&lt;br/&gt;to end from a YAML config.&quot;]
+    scripts_launcher_py___setup_launcher[&quot;&lt;b&gt;_setup_launcher()&lt;/b&gt;&lt;br/&gt;Load the YAML into LauncherConfig&lt;br/&gt;and create the W&amp;B logger on rank&lt;br/&gt;0 only.&quot;]
+    scripts_launcher_py___setup_callbacks[&quot;&lt;b&gt;_setup_callbacks()&lt;/b&gt;&lt;br/&gt;Best-checkpoint saver, early&lt;br/&gt;stopping and LR monitor on&lt;br/&gt;&#x27;mode:metric&#x27; monitor_loss.&quot;]
+    scripts_launcher_py__run_training[&quot;&lt;b&gt;run_training()&lt;/b&gt;&lt;br/&gt;Fit on train/val, reload the best&lt;br/&gt;checkpoint, then test it on the&lt;br/&gt;test split.&quot;]
+    scripts_launcher_py__run_evaluation[&quot;&lt;b&gt;run_evaluation()&lt;/b&gt;&lt;br/&gt;Test a trained checkpoint&lt;br/&gt;(model_params.ckpt_path) on the&lt;br/&gt;test split.&quot;]
+    scripts_launcher_py__run_caching[&quot;&lt;b&gt;run_caching()&lt;/b&gt;&lt;br/&gt;Run the backbone over&lt;br/&gt;train/val/test and store its&lt;br/&gt;outputs in W&amp;B (cache mode).&quot;]
+    scripts_launcher_py__run_compilation[&quot;&lt;b&gt;run_compilation()&lt;/b&gt;&lt;br/&gt;Export the model with torch.export&lt;br/&gt;on one test window, check outputs,&lt;br/&gt;log .pt2 to W&amp;B.&quot;]
+  end
+  subgraph kirad_launcher_utils_py___box[&quot;launcher_utils.py&quot;]
+    direction TB
+    kirad_launcher_utils_py__LauncherConfig___init__[&quot;&lt;b&gt;LauncherConfig.__init__()&lt;/b&gt;&lt;br/&gt;Read YAML, parse&lt;br/&gt;training/data/model params and&lt;br/&gt;instantiate the model.&quot;]
+    kirad_launcher_utils_py__LauncherConfig__init_data_params[&quot;&lt;b&gt;LauncherConfig._init_data_params()&lt;/b&gt;&lt;br/&gt;Parse data_params keys&lt;br/&gt;&#x27;‹modality›=‹class.path›&#x27; into&lt;br/&gt;factories + per-split params.&quot;]
+    kirad_launcher_utils_py__LauncherConfig_get_params_by_split[&quot;&lt;b&gt;LauncherConfig.get_params_by_split()&lt;/b&gt;&lt;br/&gt;Merge config params for one split:&lt;br/&gt;default ‹ val_test (val/test) ‹&lt;br/&gt;split.&quot;]
+    kirad_launcher_utils_py__LauncherConfig__init_model[&quot;&lt;b&gt;LauncherConfig._init_model()&lt;/b&gt;&lt;br/&gt;Import model_path, build the model&lt;br/&gt;and load ckpt weights (or defer&lt;br/&gt;full restore).&quot;]
+    kirad_launcher_utils_py__LauncherConfig_get_dataset[&quot;&lt;b&gt;LauncherConfig.get_dataset()&lt;/b&gt;&lt;br/&gt;StackDataset of metadata + each&lt;br/&gt;modality dataset for a split&lt;br/&gt;(built once).&quot;]
+    kirad_launcher_utils_py__LauncherConfig_get_data_loader[&quot;&lt;b&gt;LauncherConfig.get_data_loader()&lt;/b&gt;&lt;br/&gt;DataLoader for a split (cached per&lt;br/&gt;split and mode); batch_size =&lt;br/&gt;recordings.&quot;]
+    kirad_launcher_utils_py__TrainingParams[&quot;&lt;b&gt;TrainingParams()&lt;/b&gt;&lt;br/&gt;Validated training_params: batch&lt;br/&gt;sizes, epochs, monitor metric,&lt;br/&gt;optimizer, seed.&quot;]
+    kirad_launcher_utils_py__ModelParams[&quot;&lt;b&gt;ModelParams()&lt;/b&gt;&lt;br/&gt;Validated model_params: model&lt;br/&gt;class path, config kwargs and&lt;br/&gt;checkpoint to load.&quot;]
+  end
+  subgraph kirad_utils_py___box[&quot;utils.py&quot;]
+    direction TB
+    kirad_utils_py__import_object[&quot;&lt;b&gt;import_object()&lt;/b&gt;&lt;br/&gt;Import a class/function from a&lt;br/&gt;dotted path, e.g.&lt;br/&gt;&#x27;model.DepAnxClassifier&#x27;.&quot;]
+    kirad_utils_py__localize_wandb_artifact[&quot;&lt;b&gt;localize_wandb_artifact()&lt;/b&gt;&lt;br/&gt;Download a W&amp;B artifact once to&lt;br/&gt;~/.cache/kintsugi and return its&lt;br/&gt;local path.&quot;]
+  end
+  scripts_launcher_py__launcher --&gt; scripts_launcher_py___setup_launcher
+  scripts_launcher_py___setup_launcher --&gt;|&quot;YAML&quot;| kirad_launcher_utils_py__LauncherConfig___init__
+  kirad_launcher_utils_py__LauncherConfig___init__ --&gt; kirad_launcher_utils_py__TrainingParams
+  kirad_launcher_utils_py__LauncherConfig___init__ --&gt; kirad_launcher_utils_py__LauncherConfig__init_data_params
+  kirad_launcher_utils_py__LauncherConfig__init_data_params --&gt; kirad_launcher_utils_py__LauncherConfig_get_params_by_split
+  kirad_launcher_utils_py__LauncherConfig___init__ --&gt; kirad_launcher_utils_py__ModelParams
+  kirad_launcher_utils_py__ModelParams --&gt;|&quot;W&amp;B ckpt&quot;| kirad_utils_py__localize_wandb_artifact
+  kirad_launcher_utils_py__LauncherConfig___init__ --&gt; kirad_launcher_utils_py__LauncherConfig__init_model
+  kirad_launcher_utils_py__LauncherConfig__init_model --&gt;|&quot;model.py&quot;| kirad_utils_py__import_object
+  scripts_launcher_py__launcher --&gt; scripts_launcher_py___setup_callbacks
+  scripts_launcher_py__launcher --&gt;|&quot;mode&quot;| scripts_launcher_py__run_training
+  scripts_launcher_py__launcher --&gt; scripts_launcher_py__run_evaluation
+  scripts_launcher_py__launcher --&gt; scripts_launcher_py__run_caching
+  scripts_launcher_py__launcher --&gt; scripts_launcher_py__run_compilation
+  scripts_launcher_py__run_training --&gt; kirad_launcher_utils_py__LauncherConfig_get_data_loader
+  kirad_launcher_utils_py__LauncherConfig_get_data_loader --&gt; kirad_launcher_utils_py__LauncherConfig_get_dataset
+  click scripts_launcher_py__launcher &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L41&quot; _blank
+  click scripts_launcher_py___setup_launcher &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L142&quot; _blank
+  click scripts_launcher_py___setup_callbacks &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L176&quot; _blank
+  click scripts_launcher_py__run_training &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L110&quot; _blank
+  click scripts_launcher_py__run_evaluation &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L129&quot; _blank
+  click scripts_launcher_py__run_caching &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L278&quot; _blank
+  click scripts_launcher_py__run_compilation &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L327&quot; _blank
+  click kirad_launcher_utils_py__LauncherConfig___init__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L230&quot; _blank
+  click kirad_launcher_utils_py__LauncherConfig__init_data_params &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L322&quot; _blank
+  click kirad_launcher_utils_py__LauncherConfig_get_params_by_split &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L520&quot; _blank
+  click kirad_launcher_utils_py__LauncherConfig__init_model &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L362&quot; _blank
+  click kirad_launcher_utils_py__LauncherConfig_get_dataset &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L407&quot; _blank
+  click kirad_launcher_utils_py__LauncherConfig_get_data_loader &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L452&quot; _blank
+  click kirad_launcher_utils_py__TrainingParams &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L100&quot; _blank
+  click kirad_launcher_utils_py__ModelParams &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L149&quot; _blank
+  click kirad_utils_py__import_object &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L747&quot; _blank
+  click kirad_utils_py__localize_wandb_artifact &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L144&quot; _blank
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>File</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L41"><code>launcher</code></a></td>
+<td><code>scripts/launcher.py:41</code></td>
+<td>Run one mode (train/evaluate/cache/compile) end to end from a YAML config.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L142"><code>_setup_launcher</code></a></td>
+<td><code>scripts/launcher.py:142</code></td>
+<td>Load the YAML into LauncherConfig and create the W&amp;B logger on rank 0 only.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L176"><code>_setup_callbacks</code></a></td>
+<td><code>scripts/launcher.py:176</code></td>
+<td>Best-checkpoint saver, early stopping and LR monitor on "mode:metric" monitor_loss.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L110"><code>run_training</code></a></td>
+<td><code>scripts/launcher.py:110</code></td>
+<td>Fit on train/val, reload the best checkpoint, then test it on the test split.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L129"><code>run_evaluation</code></a></td>
+<td><code>scripts/launcher.py:129</code></td>
+<td>Test a trained checkpoint (model_params.ckpt_path) on the test split.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L278"><code>run_caching</code></a></td>
+<td><code>scripts/launcher.py:278</code></td>
+<td>Run the backbone over train/val/test and store its outputs in W&amp;B (cache mode).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L327"><code>run_compilation</code></a></td>
+<td><code>scripts/launcher.py:327</code></td>
+<td>Export the model with torch.export on one test window, check outputs, log .pt2 to W&amp;B.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L230"><code>LauncherConfig.__init__</code></a></td>
+<td><code>kirad/launcher_utils.py:230</code></td>
+<td>Read YAML, parse training/data/model params and instantiate the model.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L322"><code>LauncherConfig._init_data_params</code></a></td>
+<td><code>kirad/launcher_utils.py:322</code></td>
+<td>Parse data_params keys "&lt;modality&gt;=&lt;class.path&gt;" into factories + per-split params.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L520"><code>LauncherConfig.get_params_by_split</code></a></td>
+<td><code>kirad/launcher_utils.py:520</code></td>
+<td>Merge config params for one split: default &lt; val_test (val/test) &lt; split.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L362"><code>LauncherConfig._init_model</code></a></td>
+<td><code>kirad/launcher_utils.py:362</code></td>
+<td>Import model_path, build the model and load ckpt weights (or defer full restore).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L407"><code>LauncherConfig.get_dataset</code></a></td>
+<td><code>kirad/launcher_utils.py:407</code></td>
+<td>StackDataset of metadata + each modality dataset for a split (built once).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L452"><code>LauncherConfig.get_data_loader</code></a></td>
+<td><code>kirad/launcher_utils.py:452</code></td>
+<td>DataLoader for a split (cached per split and mode); batch_size = recordings.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L100"><code>TrainingParams</code></a></td>
+<td><code>kirad/launcher_utils.py:100</code></td>
+<td>Validated training_params: batch sizes, epochs, monitor metric, optimizer, seed.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L149"><code>ModelParams</code></a></td>
+<td><code>kirad/launcher_utils.py:149</code></td>
+<td>Validated model_params: model class path, config kwargs and checkpoint to load.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L747"><code>import_object</code></a></td>
+<td><code>kirad/utils.py:747</code></td>
+<td>Import a class/function from a dotted path, e.g. "model.DepAnxClassifier".</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L144"><code>localize_wandb_artifact</code></a></td>
+<td><code>kirad/utils.py:144</code></td>
+<td>Download a W&amp;B artifact once to ~/.cache/kintsugi and return its local path.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="2-data">2 · Data<a class="headerlink" href="#2-data" title="Permanent link">&para;</a></h3>
+<p>The metadata CSV says which WAV files to open and what their labels are. Audio is cut into 30 s windows and turned into features; windows of all recordings in a batch are concatenated and <code>length</code> remembers where each recording ends.</p>
+<div class="kmap">
+flowchart LR
+  subgraph kirad_datasets_and_dataloaders_py___box[&quot;datasets_and_dataloaders.py&quot;]
+    direction TB
+    kirad_datasets_and_dataloaders_py__KintsugiMetadata[&quot;&lt;b&gt;KintsugiMetadata()&lt;/b&gt;&lt;br/&gt;Metadata table indexed by UUID:&lt;br/&gt;loads CSV, merges KD scores,&lt;br/&gt;filters by duration.&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiMetadata_preprocess_metadata[&quot;&lt;b&gt;KintsugiMetadata.preprocess_metadata()&lt;/b&gt;&lt;br/&gt;Join KD score targets, optionally&lt;br/&gt;merge rows per subject, count&lt;br/&gt;windows per recording.&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiMetadata_filter_metadata[&quot;&lt;b&gt;KintsugiMetadata.filter_metadata()&lt;/b&gt;&lt;br/&gt;Subsample `fraction` of rows, then&lt;br/&gt;drop recordings outside min/max&lt;br/&gt;duration (s).&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiMetadata___getitem__[&quot;&lt;b&gt;KintsugiMetadata.__getitem__()&lt;/b&gt;&lt;br/&gt;Return {uuid, label: {task:&lt;br/&gt;{primary: raw score, kd: teacher&lt;br/&gt;score}}} for one UUID.&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__[&quot;&lt;b&gt;KintsugiAudioDataset.__getitem__()&lt;/b&gt;&lt;br/&gt;Load, concatenate (channel 0),&lt;br/&gt;augment and window one recording&#x27;s&lt;br/&gt;audio.&quot;]
+    kirad_datasets_and_dataloaders_py__get_preprocessor_with_audio_normalization[&quot;&lt;b&gt;get_preprocessor_with_audio_normalization()&lt;/b&gt;&lt;br/&gt;Build the function audio [T] -›&lt;br/&gt;windows -› features used by&lt;br/&gt;KintsugiAudioDataset.&quot;]
+    kirad_datasets_and_dataloaders_py__get_window_starts[&quot;&lt;b&gt;get_window_starts()&lt;/b&gt;&lt;br/&gt;Start sample(s) of the windows cut&lt;br/&gt;from one recording, by&lt;br/&gt;window_method.&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiTextDataset___getitem__[&quot;&lt;b&gt;KintsugiTextDataset.__getitem__()&lt;/b&gt;&lt;br/&gt;Read the transcript JSON(s) of one&lt;br/&gt;recording and tokenize them.&quot;]
+    kirad_datasets_and_dataloaders_py__KintsugiCacheDataset[&quot;&lt;b&gt;KintsugiCacheDataset()&lt;/b&gt;&lt;br/&gt;Precomputed backbone features by&lt;br/&gt;UUID (DAM 3 teacher cache),&lt;br/&gt;optional dim slice.&quot;]
+    kirad_datasets_and_dataloaders_py__UuidSampler[&quot;&lt;b&gt;UuidSampler()&lt;/b&gt;&lt;br/&gt;Yields metadata UUIDs (shuffled&lt;br/&gt;for train, sequential for&lt;br/&gt;val/test) for the loader.&quot;]
+  end
+  subgraph kirad_dataset_utils_py___box[&quot;dataset_utils.py&quot;]
+    direction TB
+    kirad_dataset_utils_py__load_relative_dataset[&quot;&lt;b&gt;load_relative_dataset()&lt;/b&gt;&lt;br/&gt;Load metadata and add&lt;br/&gt;audio_filename / text_filename&lt;br/&gt;paths from the filename column.&quot;]
+    kirad_dataset_utils_py__load_dataset[&quot;&lt;b&gt;load_dataset()&lt;/b&gt;&lt;br/&gt;Return metadata as a DataFrame:&lt;br/&gt;pass-through, read a CSV path, or&lt;br/&gt;a Kintsugi version.&quot;]
+    kirad_dataset_utils_py__merge_df_rows_by_subject[&quot;&lt;b&gt;merge_df_rows_by_subject()&lt;/b&gt;&lt;br/&gt;Merge rows sharing user + labels +&lt;br/&gt;demographics into one row per&lt;br/&gt;subject.&quot;]
+    kirad_dataset_utils_py__broadcast_collate[&quot;&lt;b&gt;broadcast_collate()&lt;/b&gt;&lt;br/&gt;DataLoader collate: concat windows&lt;br/&gt;of all recordings; length =&lt;br/&gt;windows per recording.&quot;]
+  end
+  subgraph kirad_augmentations_py___box[&quot;augmentations.py&quot;]
+    direction TB
+    kirad_augmentations_py__RawBoost[&quot;&lt;b&gt;RawBoost()&lt;/b&gt;&lt;br/&gt;RawBoost waveform augmentation&lt;br/&gt;(LnL/ISD/SSI noise); default algo&lt;br/&gt;4 = all three.&quot;]
+  end
+  subgraph kirad_constants_py___box[&quot;constants.py&quot;]
+    direction TB
+    kirad_constants_py__DatasetFields[&quot;&lt;b&gt;DatasetFields()&lt;/b&gt;&lt;br/&gt;Key names of a batch dict: uuid,&lt;br/&gt;features, label.‹task›.primary/kd,&lt;br/&gt;length, loss.&quot;]
+  end
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata --&gt;|&quot;CSV&quot;| kirad_dataset_utils_py__load_relative_dataset
+  kirad_dataset_utils_py__load_relative_dataset --&gt; kirad_dataset_utils_py__load_dataset
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata --&gt; kirad_datasets_and_dataloaders_py__KintsugiMetadata_preprocess_metadata
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata_preprocess_metadata --&gt;|&quot;train only&quot;| kirad_dataset_utils_py__merge_df_rows_by_subject
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata_preprocess_metadata --&gt;|&quot;count windows&quot;| kirad_datasets_and_dataloaders_py__get_window_starts
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata --&gt; kirad_datasets_and_dataloaders_py__KintsugiMetadata_filter_metadata
+  kirad_datasets_and_dataloaders_py__UuidSampler --&gt;|&quot;uuid&quot;| kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__
+  kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__ --&gt;|&quot;optional&quot;| kirad_augmentations_py__RawBoost
+  kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__ --&gt; kirad_datasets_and_dataloaders_py__get_preprocessor_with_audio_normalization
+  kirad_datasets_and_dataloaders_py__get_preprocessor_with_audio_normalization --&gt;|&quot;cut&quot;| kirad_datasets_and_dataloaders_py__get_window_starts
+  kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__ --&gt; kirad_dataset_utils_py__broadcast_collate
+  kirad_datasets_and_dataloaders_py__KintsugiTextDataset___getitem__ --&gt; kirad_dataset_utils_py__broadcast_collate
+  kirad_datasets_and_dataloaders_py__KintsugiMetadata___getitem__ --&gt;|&quot;labels&quot;| kirad_dataset_utils_py__broadcast_collate
+  kirad_dataset_utils_py__broadcast_collate --&gt;|&quot;batch keys&quot;| kirad_constants_py__DatasetFields
+  click kirad_datasets_and_dataloaders_py__KintsugiMetadata &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L70&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiMetadata_preprocess_metadata &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L207&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiMetadata_filter_metadata &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L251&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiMetadata___getitem__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L287&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiAudioDataset___getitem__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L430&quot; _blank
+  click kirad_datasets_and_dataloaders_py__get_preprocessor_with_audio_normalization &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L769&quot; _blank
+  click kirad_datasets_and_dataloaders_py__get_window_starts &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L719&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiTextDataset___getitem__ &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L558&quot; _blank
+  click kirad_datasets_and_dataloaders_py__KintsugiCacheDataset &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L611&quot; _blank
+  click kirad_datasets_and_dataloaders_py__UuidSampler &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L685&quot; _blank
+  click kirad_dataset_utils_py__load_relative_dataset &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L93&quot; _blank
+  click kirad_dataset_utils_py__load_dataset &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L48&quot; _blank
+  click kirad_dataset_utils_py__merge_df_rows_by_subject &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L625&quot; _blank
+  click kirad_dataset_utils_py__broadcast_collate &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L795&quot; _blank
+  click kirad_augmentations_py__RawBoost &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/augmentations.py#L152&quot; _blank
+  click kirad_constants_py__DatasetFields &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/constants.py#L150&quot; _blank
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>File</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L70"><code>KintsugiMetadata</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:70</code></td>
+<td>Metadata table indexed by UUID: loads CSV, merges KD scores, filters by duration.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L207"><code>KintsugiMetadata.preprocess_metadata</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:207</code></td>
+<td>Join KD score targets, optionally merge rows per subject, count windows per recording.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L251"><code>KintsugiMetadata.filter_metadata</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:251</code></td>
+<td>Subsample <code>fraction</code> of rows, then drop recordings outside min/max duration (s).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L287"><code>KintsugiMetadata.__getitem__</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:287</code></td>
+<td>Return {uuid, label: {task: {primary: raw score, kd: teacher score}}} for one UUID.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L430"><code>KintsugiAudioDataset.__getitem__</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:430</code></td>
+<td>Load, concatenate (channel 0), augment and window one recording's audio.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L769"><code>get_preprocessor_with_audio_normalization</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:769</code></td>
+<td>Build the function audio [T] -&gt; windows -&gt; features used by KintsugiAudioDataset.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L719"><code>get_window_starts</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:719</code></td>
+<td>Start sample(s) of the windows cut from one recording, by window_method.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L558"><code>KintsugiTextDataset.__getitem__</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:558</code></td>
+<td>Read the transcript JSON(s) of one recording and tokenize them.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L611"><code>KintsugiCacheDataset</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:611</code></td>
+<td>Precomputed backbone features by UUID (DAM 3 teacher cache), optional dim slice.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/datasets_and_dataloaders.py#L685"><code>UuidSampler</code></a></td>
+<td><code>kirad/datasets_and_dataloaders.py:685</code></td>
+<td>Yields metadata UUIDs (shuffled for train, sequential for val/test) for the loader.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L93"><code>load_relative_dataset</code></a></td>
+<td><code>kirad/dataset_utils.py:93</code></td>
+<td>Load metadata and add audio_filename / text_filename paths from the filename column.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L48"><code>load_dataset</code></a></td>
+<td><code>kirad/dataset_utils.py:48</code></td>
+<td>Return metadata as a DataFrame: pass-through, read a CSV path, or a Kintsugi version.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L625"><code>merge_df_rows_by_subject</code></a></td>
+<td><code>kirad/dataset_utils.py:625</code></td>
+<td>Merge rows sharing user + labels + demographics into one row per subject.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/dataset_utils.py#L795"><code>broadcast_collate</code></a></td>
+<td><code>kirad/dataset_utils.py:795</code></td>
+<td>DataLoader collate: concat windows of all recordings; length = windows per recording.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/augmentations.py#L152"><code>RawBoost</code></a></td>
+<td><code>kirad/augmentations.py:152</code></td>
+<td>RawBoost waveform augmentation (LnL/ISD/SSI noise); default algo 4 = all three.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/constants.py#L150"><code>DatasetFields</code></a></td>
+<td><code>kirad/constants.py:150</code></td>
+<td>Key names of a batch dict: uuid, features, label.&lt;task&gt;.primary/kd, length, loss.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-model-dam-1">3 · Model (DAM 1)<a class="headerlink" href="#3-model-dam-1" title="Permanent link">&para;</a></h3>
+<p>Raw audio windows become log-mel images on the GPU, the Whisper encoder (with LoRA) turns each window into a 768-d vector, and a shared layer feeds one small head per task that outputs a single score.</p>
+<div class="kmap">
+flowchart LR
+  subgraph research_stable_ordinal_regression_mtl_mar_2024_model_py___box[&quot;mtl_mar_2024/model.py&quot;]
+    direction TB
+    research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier[&quot;&lt;b&gt;DepAnxClassifier()&lt;/b&gt;&lt;br/&gt;DAM 1: log-mel -› Whisper small.en&lt;br/&gt;encoder (LoRA) -› mean pool -›&lt;br/&gt;multitask CORAL head.&quot;]
+    research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier_forward[&quot;&lt;b&gt;DepAnxClassifier.forward()&lt;/b&gt;&lt;br/&gt;Backbone then MultitaskHead -›&lt;br/&gt;({task: [ΣW, 1] scores}, lengths).&quot;]
+    research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier_forward_backbone[&quot;&lt;b&gt;DepAnxClassifier.forward_backbone()&lt;/b&gt;&lt;br/&gt;Pad raw audio to 480,000 samples,&lt;br/&gt;log-mel on GPU, Whisper encoder -›&lt;br/&gt;[ΣW, 768].&quot;]
+    research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier_configure_optimizers[&quot;&lt;b&gt;DepAnxClassifier.configure_optimizers()&lt;/b&gt;&lt;br/&gt;AdamW with two groups (backbone,&lt;br/&gt;head + CORAL biases) and&lt;br/&gt;MultiStepLR.&quot;]
+  end
+  subgraph kirad_feature_extraction_whisper_py___box[&quot;feature_extraction_whisper.py&quot;]
+    direction TB
+    kirad_feature_extraction_whisper_py__WhisperTorchFeatureExtractor_forward[&quot;&lt;b&gt;WhisperTorchFeatureExtractor.forward()&lt;/b&gt;&lt;br/&gt;Normalize each window, compute&lt;br/&gt;log-mel, shift bins to&lt;br/&gt;IDEAL_LOGMEL_ENERGIES.&quot;]
+    kirad_feature_extraction_whisper_py__WhisperTorchFeatureExtractor__torch_extract_fbank_features[&quot;&lt;b&gt;WhisperTorchFeatureExtractor._torch_extract_fbank_features()&lt;/b&gt;&lt;br/&gt;Log10 mel spectrogram, clipped to&lt;br/&gt;8 below the max, scaled (x + 4) /&lt;br/&gt;4 as Whisper.&quot;]
+  end
+  subgraph kirad_base_models_py___box[&quot;base_models.py&quot;]
+    direction TB
+    kirad_base_models_py__WhisperBackbone_forward[&quot;&lt;b&gt;WhisperBackbone.forward()&lt;/b&gt;&lt;br/&gt;Whisper encoder on log-mel&lt;br/&gt;windows, mean over time -› [ΣW, D]&lt;br/&gt;(768 for small.en).&quot;]
+    kirad_base_models_py__KintsugiBackboneBase_apply_lora[&quot;&lt;b&gt;KintsugiBackboneBase.apply_lora()&lt;/b&gt;&lt;br/&gt;Wrap self.backbone with PEFT LoRA&lt;br/&gt;from lora_params; no-op (full&lt;br/&gt;fine-tune) if empty.&quot;]
+    kirad_base_models_py__MultitaskHead_forward[&quot;&lt;b&gt;MultitaskHead.forward()&lt;/b&gt;&lt;br/&gt;Shared layers, then one TaskHead&lt;br/&gt;per task -› {task: [ΣW, 1] score}.&quot;]
+    kirad_base_models_py__MultitaskHead_SharedLayers[&quot;&lt;b&gt;MultitaskHead.SharedLayers()&lt;/b&gt;&lt;br/&gt;Shared MLP: Linear+Mish per&lt;br/&gt;proj_dim, last Linear without&lt;br/&gt;activation (e.g. D-›256-›64).&quot;]
+    kirad_base_models_py__MultitaskHead_TaskHead[&quot;&lt;b&gt;MultitaskHead.TaskHead()&lt;/b&gt;&lt;br/&gt;Per-task head: Linear(in,&lt;br/&gt;proj_dim) -› Mish -› Dropout -›&lt;br/&gt;Linear(proj_dim, 1, no bias).&quot;]
+  end
+  research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier_forward --&gt; research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier_forward_backbone
+  research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier_forward_backbone --&gt;|&quot;raw audio&quot;| kirad_feature_extraction_whisper_py__WhisperTorchFeatureExtractor_forward
+  kirad_feature_extraction_whisper_py__WhisperTorchFeatureExtractor_forward --&gt; kirad_feature_extraction_whisper_py__WhisperTorchFeatureExtractor__torch_extract_fbank_features
+  research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier_forward_backbone --&gt;|&quot;log-mel&quot;| kirad_base_models_py__WhisperBackbone_forward
+  research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier_forward --&gt;|&quot;768-d&quot;| kirad_base_models_py__MultitaskHead_forward
+  kirad_base_models_py__MultitaskHead_forward --&gt; kirad_base_models_py__MultitaskHead_SharedLayers
+  kirad_base_models_py__MultitaskHead_SharedLayers --&gt;|&quot;64-d&quot;| kirad_base_models_py__MultitaskHead_TaskHead
+  click research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_mar_2024/model.py#L25&quot; _blank
+  click research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier_forward &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_mar_2024/model.py#L81&quot; _blank
+  click research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier_forward_backbone &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_mar_2024/model.py#L86&quot; _blank
+  click research_stable_ordinal_regression_mtl_mar_2024_model_py__DepAnxClassifier_configure_optimizers &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_mar_2024/model.py#L105&quot; _blank
+  click kirad_feature_extraction_whisper_py__WhisperTorchFeatureExtractor_forward &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/feature_extraction_whisper.py#L132&quot; _blank
+  click kirad_feature_extraction_whisper_py__WhisperTorchFeatureExtractor__torch_extract_fbank_features &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/feature_extraction_whisper.py#L95&quot; _blank
+  click kirad_base_models_py__WhisperBackbone_forward &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L837&quot; _blank
+  click kirad_base_models_py__KintsugiBackboneBase_apply_lora &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L780&quot; _blank
+  click kirad_base_models_py__MultitaskHead_forward &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L1031&quot; _blank
+  click kirad_base_models_py__MultitaskHead_SharedLayers &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L959&quot; _blank
+  click kirad_base_models_py__MultitaskHead_TaskHead &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L990&quot; _blank
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>File</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_mar_2024/model.py#L25"><code>DepAnxClassifier</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_mar_2024/model.py:25</code></td>
+<td>DAM 1: log-mel -&gt; Whisper small.en encoder (LoRA) -&gt; mean pool -&gt; multitask CORAL head.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_mar_2024/model.py#L81"><code>DepAnxClassifier.forward</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_mar_2024/model.py:81</code></td>
+<td>Backbone then MultitaskHead -&gt; ({task: [ΣW, 1] scores}, lengths).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_mar_2024/model.py#L86"><code>DepAnxClassifier.forward_backbone</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_mar_2024/model.py:86</code></td>
+<td>Pad raw audio to 480,000 samples, log-mel on GPU, Whisper encoder -&gt; [ΣW, 768].</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_mar_2024/model.py#L105"><code>DepAnxClassifier.configure_optimizers</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_mar_2024/model.py:105</code></td>
+<td>AdamW with two groups (backbone, head + CORAL biases) and MultiStepLR.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/feature_extraction_whisper.py#L132"><code>WhisperTorchFeatureExtractor.forward</code></a></td>
+<td><code>kirad/feature_extraction_whisper.py:132</code></td>
+<td>Normalize each window, compute log-mel, shift bins to IDEAL_LOGMEL_ENERGIES.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/feature_extraction_whisper.py#L95"><code>WhisperTorchFeatureExtractor._torch_extract_fbank_features</code></a></td>
+<td><code>kirad/feature_extraction_whisper.py:95</code></td>
+<td>Log10 mel spectrogram, clipped to 8 below the max, scaled (x + 4) / 4 as Whisper.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L837"><code>WhisperBackbone.forward</code></a></td>
+<td><code>kirad/base_models.py:837</code></td>
+<td>Whisper encoder on log-mel windows, mean over time -&gt; [ΣW, D] (768 for small.en).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L780"><code>KintsugiBackboneBase.apply_lora</code></a></td>
+<td><code>kirad/base_models.py:780</code></td>
+<td>Wrap self.backbone with PEFT LoRA from lora_params; no-op (full fine-tune) if empty.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L1031"><code>MultitaskHead.forward</code></a></td>
+<td><code>kirad/base_models.py:1031</code></td>
+<td>Shared layers, then one TaskHead per task -&gt; {task: [ΣW, 1] score}.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L959"><code>MultitaskHead.SharedLayers</code></a></td>
+<td><code>kirad/base_models.py:959</code></td>
+<td>Shared MLP: Linear+Mish per proj_dim, last Linear without activation (e.g. D-&gt;256-&gt;64).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L990"><code>MultitaskHead.TaskHead</code></a></td>
+<td><code>kirad/base_models.py:990</code></td>
+<td>Per-task head: Linear(in, proj_dim) -&gt; Mish -&gt; Dropout -&gt; Linear(proj_dim, 1, no bias).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-loss">4 · Loss<a class="headerlink" href="#4-loss" title="Permanent link">&para;</a></h3>
+<p>Each task turns its score into 27 (or 21) ordered yes/no questions with CORAL. Train: CORAL loss per window, averaged per recording; val/test: loss of the per-recording mean score. A variance penalty makes windows of the same recording agree.</p>
+<div class="kmap">
+flowchart LR
+  subgraph kirad_base_models_py___box[&quot;base_models.py&quot;]
+    direction TB
+    kirad_base_models_py__MultiTaskOrdinalRegressionPLModule_step[&quot;&lt;b&gt;MultiTaskOrdinalRegressionPLModule.step()&lt;/b&gt;&lt;br/&gt;Run model once, sum each task&#x27;s&lt;br/&gt;loss (task.step) into total_loss.&quot;]
+    kirad_base_models_py__OrdinalRegressionPLModule_step[&quot;&lt;b&gt;OrdinalRegressionPLModule.step()&lt;/b&gt;&lt;br/&gt;Accumulate per-recording mean/var&lt;br/&gt;scores for val/test, then return&lt;br/&gt;the loss.&quot;]
+    kirad_base_models_py__OrdinalRegressionPLModule_compute_and_log_loss[&quot;&lt;b&gt;OrdinalRegressionPLModule.compute_and_log_loss()&lt;/b&gt;&lt;br/&gt;Loss = coral_w·CORAL +&lt;br/&gt;var_w·Var(window scores) +&lt;br/&gt;kd_w·MSE(teacher), logged.&quot;]
+  end
+  subgraph kirad_losses_py___box[&quot;losses.py&quot;]
+    direction TB
+    kirad_losses_py__CORALLoss_forward[&quot;&lt;b&gt;CORALLoss.forward()&lt;/b&gt;&lt;br/&gt;Weighted sum of BCE over cutoffs:&lt;br/&gt;sigmoid(s + b_k) vs [y › k] for&lt;br/&gt;each cutoff k.&quot;]
+  end
+  subgraph kirad_utils_py___box[&quot;utils.py&quot;]
+    direction TB
+    kirad_utils_py__average_and_variance_tensor_in_segments[&quot;&lt;b&gt;average_and_variance_tensor_in_segments()&lt;/b&gt;&lt;br/&gt;Per-recording mean and (biased)&lt;br/&gt;variance of window scores: [ΣW,&lt;br/&gt;...] -› two [B, ...].&quot;]
+    kirad_utils_py__average_tensor_in_segments[&quot;&lt;b&gt;average_tensor_in_segments()&lt;/b&gt;&lt;br/&gt;Mean over each recording&#x27;s&lt;br/&gt;windows: [ΣW, ...] -› [B, ...]&lt;br/&gt;using `length`.&quot;]
+  end
+  kirad_base_models_py__MultiTaskOrdinalRegressionPLModule_step --&gt;|&quot;per task&quot;| kirad_base_models_py__OrdinalRegressionPLModule_step
+  kirad_base_models_py__OrdinalRegressionPLModule_step --&gt; kirad_base_models_py__OrdinalRegressionPLModule_compute_and_log_loss
+  kirad_base_models_py__OrdinalRegressionPLModule_compute_and_log_loss --&gt;|&quot;per recording&quot;| kirad_utils_py__average_and_variance_tensor_in_segments
+  kirad_utils_py__average_and_variance_tensor_in_segments --&gt; kirad_utils_py__average_tensor_in_segments
+  kirad_base_models_py__OrdinalRegressionPLModule_compute_and_log_loss --&gt; kirad_losses_py__CORALLoss_forward
+  click kirad_base_models_py__MultiTaskOrdinalRegressionPLModule_step &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L699&quot; _blank
+  click kirad_base_models_py__OrdinalRegressionPLModule_step &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L544&quot; _blank
+  click kirad_base_models_py__OrdinalRegressionPLModule_compute_and_log_loss &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L482&quot; _blank
+  click kirad_losses_py__CORALLoss_forward &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/losses.py#L40&quot; _blank
+  click kirad_utils_py__average_and_variance_tensor_in_segments &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L116&quot; _blank
+  click kirad_utils_py__average_tensor_in_segments &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L86&quot; _blank
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>File</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L699"><code>MultiTaskOrdinalRegressionPLModule.step</code></a></td>
+<td><code>kirad/base_models.py:699</code></td>
+<td>Run model once, sum each task's loss (task.step) into total_loss.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L544"><code>OrdinalRegressionPLModule.step</code></a></td>
+<td><code>kirad/base_models.py:544</code></td>
+<td>Accumulate per-recording mean/var scores for val/test, then return the loss.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L482"><code>OrdinalRegressionPLModule.compute_and_log_loss</code></a></td>
+<td><code>kirad/base_models.py:482</code></td>
+<td>Loss = coral_w·CORAL + var_w·Var(window scores) + kd_w·MSE(teacher), logged.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/losses.py#L40"><code>CORALLoss.forward</code></a></td>
+<td><code>kirad/losses.py:40</code></td>
+<td>Weighted sum of BCE over cutoffs: sigmoid(s + b_k) vs [y &gt; k] for each cutoff k.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L116"><code>average_and_variance_tensor_in_segments</code></a></td>
+<td><code>kirad/utils.py:116</code></td>
+<td>Per-recording mean and (biased) variance of window scores: [ΣW, ...] -&gt; two [B, ...].</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L86"><code>average_tensor_in_segments</code></a></td>
+<td><code>kirad/utils.py:86</code></td>
+<td>Mean over each recording's windows: [ΣW, ...] -&gt; [B, ...] using <code>length</code>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-thresholds-and-metrics">5 · Thresholds and metrics<a class="headerlink" href="#5-thresholds-and-metrics" title="Permanent link">&para;</a></h3>
+<p>After every validation, scores of all recordings are gathered, five threshold sets are tuned by dynamic programming, a sixth is read from the CORAL biases, and Sn/Sp with an indeterminate band are computed. Test reuses the validation thresholds.</p>
+<div class="kmap">
+flowchart LR
+  subgraph kirad_base_models_py___box[&quot;base_models.py&quot;]
+    direction TB
+    kirad_base_models_py__MultiTaskOrdinalRegressionPLModule_on_validation_test_epoch_end[&quot;&lt;b&gt;MultiTaskOrdinalRegressionPLModule.on_validation_test_epoch_end()&lt;/b&gt;&lt;br/&gt;Run each task&#x27;s epoch end, then&lt;br/&gt;log harmonic mean of shared&lt;br/&gt;metrics across tasks.&quot;]
+    kirad_base_models_py__OrdinalRegressionPLModule_on_validation_test_epoch_end[&quot;&lt;b&gt;OrdinalRegressionPLModule.on_validation_test_epoch_end()&lt;/b&gt;&lt;br/&gt;Gather scores, log W&amp;B table, tune&lt;br/&gt;thresholds on val, compute Sn/Sp&lt;br/&gt;metrics.&quot;]
+    kirad_base_models_py__OrdinalRegressionPLModule_quantize_labels[&quot;&lt;b&gt;OrdinalRegressionPLModule.quantize_labels()&lt;/b&gt;&lt;br/&gt;Map input labels (e.g. PHQ-9 sum)&lt;br/&gt;to output labels (e.g. 0/1/2 for&lt;br/&gt;L/M/H).&quot;]
+    kirad_base_models_py__OrdinalRegressionPLModule_log_ordinal_metrics[&quot;&lt;b&gt;OrdinalRegressionPLModule.log_ordinal_metrics()&lt;/b&gt;&lt;br/&gt;Log AUROC and min(Sn, Sp) per&lt;br/&gt;binary cut and indet budget, plus&lt;br/&gt;their mean.&quot;]
+    kirad_base_models_py__OrdinalRegressionPLModule_log_thresholding_metrics[&quot;&lt;b&gt;OrdinalRegressionPLModule.log_thresholding_metrics()&lt;/b&gt;&lt;br/&gt;Log each tuned method&#x27;s cost when&lt;br/&gt;scored with every method&#x27;s&lt;br/&gt;thresholds.&quot;]
+  end
+  subgraph kirad_ordinal_thresholding_py___box[&quot;ordinal_thresholding.py&quot;]
+    direction TB
+    kirad_ordinal_thresholding_py__OptimalOrdinalThresholdingViaDynamicProgramming_tune_thresholds[&quot;&lt;b&gt;OptimalOrdinalThresholdingViaDynamicProgramming.tune_thresholds()&lt;/b&gt;&lt;br/&gt;Set thresholds by DP over&lt;br/&gt;midpoints of unique scores&lt;br/&gt;(+/-inf); return the best metric.&quot;]
+    kirad_ordinal_thresholding_py__OptimalCostPerSampleOrdinalThresholding_dp_step[&quot;&lt;b&gt;OptimalCostPerSampleOrdinalThresholding.dp_step()&lt;/b&gt;&lt;br/&gt;O(n) DP step: histogram per-sample&lt;br/&gt;costs over candidates, cumsum,&lt;br/&gt;running max.&quot;]
+    kirad_ordinal_thresholding_py__OptimalCostPerClassOrdinalThresholding_dp_step[&quot;&lt;b&gt;OptimalCostPerClassOrdinalThresholding.dp_step()&lt;/b&gt;&lt;br/&gt;O(T^2) DP step: add prev_cost to&lt;br/&gt;each lower-threshold row and max&lt;br/&gt;over it.&quot;]
+    kirad_ordinal_thresholding_py__CORALThresholding_tune_thresholds[&quot;&lt;b&gt;CORALThresholding.tune_thresholds()&lt;/b&gt;&lt;br/&gt;Copy -biases[threshold_indices]&lt;br/&gt;from the CORAL loss; scores and&lt;br/&gt;labels are ignored.&quot;]
+  end
+  subgraph kirad_metrics_py___box[&quot;metrics.py&quot;]
+    direction TB
+    kirad_metrics_py__MultiCatMetric[&quot;&lt;b&gt;MultiCatMetric()&lt;/b&gt;&lt;br/&gt;Accumulate parallel tensors over&lt;br/&gt;batches and ranks (uuids, scores,&lt;br/&gt;variances, labels).&quot;]
+    kirad_metrics_py__IndetSnSpArray_build[&quot;&lt;b&gt;IndetSnSpArray.build()&lt;/b&gt;&lt;br/&gt;Sn/Sp/indet_frac for all threshold&lt;br/&gt;pairs (or the given ones) via&lt;br/&gt;histogram cumsums.&quot;]
+    kirad_metrics_py__IndetSnSpArray_roc_curve[&quot;&lt;b&gt;IndetSnSpArray.roc_curve()&lt;/b&gt;&lt;br/&gt;Pareto ROC curve of (Sn, Sp) using&lt;br/&gt;only pairs with indet_frac ‹=&lt;br/&gt;indet_budget.&quot;]
+    kirad_metrics_py__IndetSnSpArray_sn_eq_sp_graph[&quot;&lt;b&gt;IndetSnSpArray.sn_eq_sp_graph()&lt;/b&gt;&lt;br/&gt;Best min(Sn, Sp) per indeterminate&lt;br/&gt;fraction; these thresholds are&lt;br/&gt;saved in the ckpt.&quot;]
+  end
+  kirad_base_models_py__MultiTaskOrdinalRegressionPLModule_on_validation_test_epoch_end --&gt;|&quot;per task&quot;| kirad_base_models_py__OrdinalRegressionPLModule_on_validation_test_epoch_end
+  kirad_metrics_py__MultiCatMetric --&gt;|&quot;gathered scores&quot;| kirad_base_models_py__OrdinalRegressionPLModule_on_validation_test_epoch_end
+  kirad_base_models_py__OrdinalRegressionPLModule_on_validation_test_epoch_end --&gt; kirad_base_models_py__OrdinalRegressionPLModule_quantize_labels
+  kirad_base_models_py__OrdinalRegressionPLModule_on_validation_test_epoch_end --&gt;|&quot;val only&quot;| kirad_ordinal_thresholding_py__OptimalOrdinalThresholdingViaDynamicProgramming_tune_thresholds
+  kirad_ordinal_thresholding_py__OptimalOrdinalThresholdingViaDynamicProgramming_tune_thresholds --&gt; kirad_ordinal_thresholding_py__OptimalCostPerSampleOrdinalThresholding_dp_step
+  kirad_ordinal_thresholding_py__OptimalOrdinalThresholdingViaDynamicProgramming_tune_thresholds --&gt; kirad_ordinal_thresholding_py__OptimalCostPerClassOrdinalThresholding_dp_step
+  kirad_base_models_py__OrdinalRegressionPLModule_on_validation_test_epoch_end --&gt; kirad_ordinal_thresholding_py__CORALThresholding_tune_thresholds
+  kirad_base_models_py__OrdinalRegressionPLModule_on_validation_test_epoch_end --&gt; kirad_metrics_py__IndetSnSpArray_build
+  kirad_base_models_py__OrdinalRegressionPLModule_on_validation_test_epoch_end --&gt;|&quot;Sn=Sp ops (val)&quot;| kirad_metrics_py__IndetSnSpArray_sn_eq_sp_graph
+  kirad_base_models_py__OrdinalRegressionPLModule_on_validation_test_epoch_end --&gt; kirad_base_models_py__OrdinalRegressionPLModule_log_ordinal_metrics
+  kirad_base_models_py__OrdinalRegressionPLModule_log_ordinal_metrics --&gt; kirad_metrics_py__IndetSnSpArray_roc_curve
+  kirad_base_models_py__OrdinalRegressionPLModule_on_validation_test_epoch_end --&gt; kirad_base_models_py__OrdinalRegressionPLModule_log_thresholding_metrics
+  click kirad_base_models_py__MultiTaskOrdinalRegressionPLModule_on_validation_test_epoch_end &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L648&quot; _blank
+  click kirad_base_models_py__OrdinalRegressionPLModule_on_validation_test_epoch_end &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L407&quot; _blank
+  click kirad_base_models_py__OrdinalRegressionPLModule_quantize_labels &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L212&quot; _blank
+  click kirad_base_models_py__OrdinalRegressionPLModule_log_ordinal_metrics &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L218&quot; _blank
+  click kirad_base_models_py__OrdinalRegressionPLModule_log_thresholding_metrics &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L302&quot; _blank
+  click kirad_ordinal_thresholding_py__OptimalOrdinalThresholdingViaDynamicProgramming_tune_thresholds &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/ordinal_thresholding.py#L177&quot; _blank
+  click kirad_ordinal_thresholding_py__OptimalCostPerSampleOrdinalThresholding_dp_step &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/ordinal_thresholding.py#L284&quot; _blank
+  click kirad_ordinal_thresholding_py__OptimalCostPerClassOrdinalThresholding_dp_step &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/ordinal_thresholding.py#L437&quot; _blank
+  click kirad_ordinal_thresholding_py__CORALThresholding_tune_thresholds &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/ordinal_thresholding.py#L85&quot; _blank
+  click kirad_metrics_py__MultiCatMetric &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/metrics.py#L39&quot; _blank
+  click kirad_metrics_py__IndetSnSpArray_build &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/metrics.py#L170&quot; _blank
+  click kirad_metrics_py__IndetSnSpArray_roc_curve &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/metrics.py#L276&quot; _blank
+  click kirad_metrics_py__IndetSnSpArray_sn_eq_sp_graph &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/metrics.py#L289&quot; _blank
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>File</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L648"><code>MultiTaskOrdinalRegressionPLModule.on_validation_test_epoch_end</code></a></td>
+<td><code>kirad/base_models.py:648</code></td>
+<td>Run each task's epoch end, then log harmonic mean of shared metrics across tasks.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L407"><code>OrdinalRegressionPLModule.on_validation_test_epoch_end</code></a></td>
+<td><code>kirad/base_models.py:407</code></td>
+<td>Gather scores, log W&amp;B table, tune thresholds on val, compute Sn/Sp metrics.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L212"><code>OrdinalRegressionPLModule.quantize_labels</code></a></td>
+<td><code>kirad/base_models.py:212</code></td>
+<td>Map input labels (e.g. PHQ-9 sum) to output labels (e.g. 0/1/2 for L/M/H).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L218"><code>OrdinalRegressionPLModule.log_ordinal_metrics</code></a></td>
+<td><code>kirad/base_models.py:218</code></td>
+<td>Log AUROC and min(Sn, Sp) per binary cut and indet budget, plus their mean.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L302"><code>OrdinalRegressionPLModule.log_thresholding_metrics</code></a></td>
+<td><code>kirad/base_models.py:302</code></td>
+<td>Log each tuned method's cost when scored with every method's thresholds.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/ordinal_thresholding.py#L177"><code>OptimalOrdinalThresholdingViaDynamicProgramming.tune_thresholds</code></a></td>
+<td><code>kirad/ordinal_thresholding.py:177</code></td>
+<td>Set thresholds by DP over midpoints of unique scores (+/-inf); return the best metric.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/ordinal_thresholding.py#L284"><code>OptimalCostPerSampleOrdinalThresholding.dp_step</code></a></td>
+<td><code>kirad/ordinal_thresholding.py:284</code></td>
+<td>O(n) DP step: histogram per-sample costs over candidates, cumsum, running max.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/ordinal_thresholding.py#L437"><code>OptimalCostPerClassOrdinalThresholding.dp_step</code></a></td>
+<td><code>kirad/ordinal_thresholding.py:437</code></td>
+<td>O(T^2) DP step: add prev_cost to each lower-threshold row and max over it.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/ordinal_thresholding.py#L85"><code>CORALThresholding.tune_thresholds</code></a></td>
+<td><code>kirad/ordinal_thresholding.py:85</code></td>
+<td>Copy -biases[threshold_indices] from the CORAL loss; scores and labels are ignored.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/metrics.py#L39"><code>MultiCatMetric</code></a></td>
+<td><code>kirad/metrics.py:39</code></td>
+<td>Accumulate parallel tensors over batches and ranks (uuids, scores, variances, labels).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/metrics.py#L170"><code>IndetSnSpArray.build</code></a></td>
+<td><code>kirad/metrics.py:170</code></td>
+<td>Sn/Sp/indet_frac for all threshold pairs (or the given ones) via histogram cumsums.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/metrics.py#L276"><code>IndetSnSpArray.roc_curve</code></a></td>
+<td><code>kirad/metrics.py:276</code></td>
+<td>Pareto ROC curve of (Sn, Sp) using only pairs with indet_frac &lt;= indet_budget.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/metrics.py#L289"><code>IndetSnSpArray.sn_eq_sp_graph</code></a></td>
+<td><code>kirad/metrics.py:289</code></td>
+<td>Best min(Sn, Sp) per indeterminate fraction; these thresholds are saved in the ckpt.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="6-outputs-and-analysis">6 · Outputs and analysis<a class="headerlink" href="#6-outputs-and-analysis" title="Permanent link">&para;</a></h3>
+<p>The best checkpoint (with thresholds inside) is saved at the end of validation; scores, metrics, code and datasets go to W&amp;B (_log_to_wandb runs at start-up, before training). After training, utils pulls the scores back for analysis and report cards. cache_backbone is the <code>cache</code> mode, called by run_caching.</p>
+<div class="kmap">
+flowchart LR
+  subgraph kirad_launcher_utils_py___box[&quot;launcher_utils.py&quot;]
+    direction TB
+    kirad_launcher_utils_py__DistributedModelCheckpoint_on_validation_end[&quot;&lt;b&gt;DistributedModelCheckpoint.on_validation_end()&lt;/b&gt;&lt;br/&gt;Save best/last ckpt after&lt;br/&gt;validation (with tuned&lt;br/&gt;thresholds); replicate on nodes.&quot;]
+    kirad_launcher_utils_py__LauncherLogger[&quot;&lt;b&gt;LauncherLogger()&lt;/b&gt;&lt;br/&gt;W&amp;B run for the experiment; logs&lt;br/&gt;code and pandas tables as&lt;br/&gt;artifacts.&quot;]
+  end
+  subgraph scripts_launcher_py___box[&quot;launcher.py&quot;]
+    direction TB
+    scripts_launcher_py___log_to_wandb[&quot;&lt;b&gt;_log_to_wandb()&lt;/b&gt;&lt;br/&gt;Upload experiment + kirad source,&lt;br/&gt;package versions and ideal log-mel&lt;br/&gt;energies to W&amp;B.&quot;]
+    scripts_launcher_py___log_datasets_to_wandb[&quot;&lt;b&gt;_log_datasets_to_wandb()&lt;/b&gt;&lt;br/&gt;Upload the metadata table actually&lt;br/&gt;used for each split as a W&amp;B&lt;br/&gt;&#x27;dataset&#x27; artifact.&quot;]
+  end
+  subgraph kirad_utils_py___box[&quot;utils.py&quot;]
+    direction TB
+    kirad_utils_py__cache_backbone[&quot;&lt;b&gt;cache_backbone()&lt;/b&gt;&lt;br/&gt;Run the backbone on all datasets,&lt;br/&gt;gather outputs by uuid across&lt;br/&gt;ranks, log to W&amp;B.&quot;]
+    kirad_utils_py__get_dataframe_with_scores[&quot;&lt;b&gt;get_dataframe_with_scores()&lt;/b&gt;&lt;br/&gt;Join a run&#x27;s metadata CSVs with&lt;br/&gt;its W&amp;B scores-‹task›-‹split›&lt;br/&gt;tables on uuid.&quot;]
+    kirad_utils_py__indet_analysis[&quot;&lt;b&gt;indet_analysis()&lt;/b&gt;&lt;br/&gt;Tune sn_eq_sp thresholds on val&lt;br/&gt;per budget and binary cut, then&lt;br/&gt;measure them on test.&quot;]
+    kirad_utils_py__analyze_dataframe_with_scores[&quot;&lt;b&gt;analyze_dataframe_with_scores()&lt;/b&gt;&lt;br/&gt;Mean AUROC and sn_eq_sp (0% indet)&lt;br/&gt;over binary cuts, per subgroup of&lt;br/&gt;the dataframe.&quot;]
+    kirad_utils_py__get_wandb_report_card_tsvs[&quot;&lt;b&gt;get_wandb_report_card_tsvs()&lt;/b&gt;&lt;br/&gt;Build a TSV report card per task&lt;br/&gt;from a W&amp;B run and log it back as&lt;br/&gt;an artifact.&quot;]
+  end
+  subgraph kirad_plotting_py___box[&quot;plotting.py&quot;]
+    direction TB
+    kirad_plotting_py__plot_indeterminate_analysis[&quot;&lt;b&gt;plot_indeterminate_analysis()&lt;/b&gt;&lt;br/&gt;Plot thresholds and Sn=Sp vs&lt;br/&gt;indeterminate budget, plus ROC&lt;br/&gt;curves per binary cut.&quot;]
+  end
+  scripts_launcher_py___log_to_wandb --&gt; kirad_launcher_utils_py__LauncherLogger
+  scripts_launcher_py___log_datasets_to_wandb --&gt; kirad_launcher_utils_py__LauncherLogger
+  kirad_utils_py__get_wandb_report_card_tsvs --&gt; kirad_utils_py__indet_analysis
+  kirad_utils_py__indet_analysis --&gt; kirad_utils_py__get_dataframe_with_scores
+  kirad_utils_py__get_dataframe_with_scores --&gt;|&quot;df&quot;| kirad_plotting_py__plot_indeterminate_analysis
+  kirad_utils_py__get_dataframe_with_scores --&gt;|&quot;df&quot;| kirad_utils_py__analyze_dataframe_with_scores
+  click kirad_launcher_utils_py__DistributedModelCheckpoint_on_validation_end &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L45&quot; _blank
+  click kirad_launcher_utils_py__LauncherLogger &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L566&quot; _blank
+  click scripts_launcher_py___log_to_wandb &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L214&quot; _blank
+  click scripts_launcher_py___log_datasets_to_wandb &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L266&quot; _blank
+  click kirad_utils_py__cache_backbone &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L787&quot; _blank
+  click kirad_utils_py__get_dataframe_with_scores &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L417&quot; _blank
+  click kirad_utils_py__indet_analysis &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L554&quot; _blank
+  click kirad_utils_py__analyze_dataframe_with_scores &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L607&quot; _blank
+  click kirad_utils_py__get_wandb_report_card_tsvs &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L241&quot; _blank
+  click kirad_plotting_py__plot_indeterminate_analysis &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/plotting.py#L16&quot; _blank
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>File</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L45"><code>DistributedModelCheckpoint.on_validation_end</code></a></td>
+<td><code>kirad/launcher_utils.py:45</code></td>
+<td>Save best/last ckpt after validation (with tuned thresholds); replicate on nodes.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/launcher_utils.py#L566"><code>LauncherLogger</code></a></td>
+<td><code>kirad/launcher_utils.py:566</code></td>
+<td>W&amp;B run for the experiment; logs code and pandas tables as artifacts.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L214"><code>_log_to_wandb</code></a></td>
+<td><code>scripts/launcher.py:214</code></td>
+<td>Upload experiment + kirad source, package versions and ideal log-mel energies to W&amp;B.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/scripts/launcher.py#L266"><code>_log_datasets_to_wandb</code></a></td>
+<td><code>scripts/launcher.py:266</code></td>
+<td>Upload the metadata table actually used for each split as a W&amp;B "dataset" artifact.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L787"><code>cache_backbone</code></a></td>
+<td><code>kirad/utils.py:787</code></td>
+<td>Run the backbone on all datasets, gather outputs by uuid across ranks, log to W&amp;B.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L417"><code>get_dataframe_with_scores</code></a></td>
+<td><code>kirad/utils.py:417</code></td>
+<td>Join a run's metadata CSVs with its W&amp;B scores-&lt;task&gt;-&lt;split&gt; tables on uuid.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L554"><code>indet_analysis</code></a></td>
+<td><code>kirad/utils.py:554</code></td>
+<td>Tune sn_eq_sp thresholds on val per budget and binary cut, then measure them on test.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L607"><code>analyze_dataframe_with_scores</code></a></td>
+<td><code>kirad/utils.py:607</code></td>
+<td>Mean AUROC and sn_eq_sp (0% indet) over binary cuts, per subgroup of the dataframe.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/utils.py#L241"><code>get_wandb_report_card_tsvs</code></a></td>
+<td><code>kirad/utils.py:241</code></td>
+<td>Build a TSV report card per task from a W&amp;B run and log it back as an artifact.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/plotting.py#L16"><code>plot_indeterminate_analysis</code></a></td>
+<td><code>kirad/plotting.py:16</code></td>
+<td>Plot thresholds and Sn=Sp vs indeterminate budget, plus ROC curves per binary cut.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="7-the-other-versions-dam-2-dam-3">7 · The other versions (DAM 2, DAM 3)<a class="headerlink" href="#7-the-other-versions-dam-2-dam-3" title="Permanent link">&para;</a></h3>
+<p>DAM 2 adds a text backbone over the transcript. DAM 3 first trains a Whisper to imitate BERT's vector from audio (WhisperLLMA), then freezes it and trains only the head.</p>
+<div class="kmap">
+flowchart LR
+  subgraph research_stable_ordinal_regression_mtl_jun_2024_model_py___box[&quot;mtl_jun_2024/model.py&quot;]
+    direction TB
+    research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierBase[&quot;&lt;b&gt;DepAnxClassifierBase()&lt;/b&gt;&lt;br/&gt;Concatenate embeddings of several&lt;br/&gt;backbones (ModuleDict order) and&lt;br/&gt;feed a MultitaskHead.&quot;]
+    research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperBERT[&quot;&lt;b&gt;DepAnxClassifierWhisperBERT()&lt;/b&gt;&lt;br/&gt;DAM 2: Whisper audio + BERT&lt;br/&gt;transcript embeddings (768 + 768)&lt;br/&gt;-› multitask head.&quot;]
+    research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperLLAMA[&quot;&lt;b&gt;DepAnxClassifierWhisperLLAMA()&lt;/b&gt;&lt;br/&gt;Whisper audio + LLaMA transcript&lt;br/&gt;embeddings concatenated -›&lt;br/&gt;multitask head.&quot;]
+    research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierLLAMA[&quot;&lt;b&gt;DepAnxClassifierLLAMA()&lt;/b&gt;&lt;br/&gt;Text only: LLaMA transcript&lt;br/&gt;embedding -› multitask head.&quot;]
+  end
+  subgraph research_stable_ordinal_regression_mtl_aug_2024_model_py___box[&quot;mtl_aug_2024/model.py&quot;]
+    direction TB
+    research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA[&quot;&lt;b&gt;WhisperLLMA()&lt;/b&gt;&lt;br/&gt;DAM 3 phase 1: Whisper encoder&lt;br/&gt;trained to predict a cached text&lt;br/&gt;embedding from audio.&quot;]
+    research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA_step[&quot;&lt;b&gt;WhisperLLMA.step()&lt;/b&gt;&lt;br/&gt;MSE between per-recording Whisper&lt;br/&gt;embedding and the cached teacher&lt;br/&gt;embedding.&quot;]
+    research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier[&quot;&lt;b&gt;DepAnxClassifier()&lt;/b&gt;&lt;br/&gt;DAM 3: frozen Whisper + frozen&lt;br/&gt;WhisperLLMA embeddings (768 + 768)&lt;br/&gt;-› trainable head.&quot;]
+    research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier_forward_backbone[&quot;&lt;b&gt;DepAnxClassifier.forward_backbone()&lt;/b&gt;&lt;br/&gt;No-grad Whisper + WhisperLLMA,&lt;br/&gt;averaged per recording -› [B,&lt;br/&gt;1536]; lengths set to 1.&quot;]
+  end
+  subgraph kirad_base_models_py___box[&quot;base_models.py&quot;]
+    direction TB
+    kirad_base_models_py__BERTBackbone[&quot;&lt;b&gt;BERTBackbone()&lt;/b&gt;&lt;br/&gt;BERT on transcript tokens; returns&lt;br/&gt;the pooler output [ΣW, 768] (DAM 2&lt;br/&gt;text branch).&quot;]
+    kirad_base_models_py__LLAMABackbone[&quot;&lt;b&gt;LLAMABackbone()&lt;/b&gt;&lt;br/&gt;LLaMA cut to num_layers layers;&lt;br/&gt;embeds text as the last real&lt;br/&gt;token&#x27;s hidden state.&quot;]
+    kirad_base_models_py__Wav2Vec2Backbone[&quot;&lt;b&gt;Wav2Vec2Backbone()&lt;/b&gt;&lt;br/&gt;wav2vec2 encoder on raw audio,&lt;br/&gt;mean-pooled (not used by the&lt;br/&gt;stable DAM configs).&quot;]
+  end
+  research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperBERT --&gt; research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierBase
+  research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperBERT --&gt;|&quot;text&quot;| kirad_base_models_py__BERTBackbone
+  research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperLLAMA --&gt; kirad_base_models_py__LLAMABackbone
+  research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierLLAMA --&gt; kirad_base_models_py__LLAMABackbone
+  research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA --&gt;|&quot;phase 1: MSE&quot;| research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA_step
+  research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA --&gt;|&quot;frozen&quot;| research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier
+  research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier --&gt; research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier_forward_backbone
+  click research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierBase &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L54&quot; _blank
+  click research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperBERT &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L138&quot; _blank
+  click research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierWhisperLLAMA &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L165&quot; _blank
+  click research_stable_ordinal_regression_mtl_jun_2024_model_py__DepAnxClassifierLLAMA &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L185&quot; _blank
+  click research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L32&quot; _blank
+  click research_stable_ordinal_regression_mtl_aug_2024_model_py__WhisperLLMA_step &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L101&quot; _blank
+  click research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L144&quot; _blank
+  click research_stable_ordinal_regression_mtl_aug_2024_model_py__DepAnxClassifier_forward_backbone &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L212&quot; _blank
+  click kirad_base_models_py__BERTBackbone &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L877&quot; _blank
+  click kirad_base_models_py__LLAMABackbone &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L899&quot; _blank
+  click kirad_base_models_py__Wav2Vec2Backbone &quot;https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L848&quot; _blank
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>File</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L54"><code>DepAnxClassifierBase</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_jun_2024/model.py:54</code></td>
+<td>Concatenate embeddings of several backbones (ModuleDict order) and feed a MultitaskHead.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L138"><code>DepAnxClassifierWhisperBERT</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_jun_2024/model.py:138</code></td>
+<td>DAM 2: Whisper audio + BERT transcript embeddings (768 + 768) -&gt; multitask head.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L165"><code>DepAnxClassifierWhisperLLAMA</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_jun_2024/model.py:165</code></td>
+<td>Whisper audio + LLaMA transcript embeddings concatenated -&gt; multitask head.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_jun_2024/model.py#L185"><code>DepAnxClassifierLLAMA</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_jun_2024/model.py:185</code></td>
+<td>Text only: LLaMA transcript embedding -&gt; multitask head.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L32"><code>WhisperLLMA</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_aug_2024/model.py:32</code></td>
+<td>DAM 3 phase 1: Whisper encoder trained to predict a cached text embedding from audio.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L101"><code>WhisperLLMA.step</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_aug_2024/model.py:101</code></td>
+<td>MSE between per-recording Whisper embedding and the cached teacher embedding.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L144"><code>DepAnxClassifier</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_aug_2024/model.py:144</code></td>
+<td>DAM 3: frozen Whisper + frozen WhisperLLMA embeddings (768 + 768) -&gt; trainable head.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/research/stable/ordinal_regression_mtl_aug_2024/model.py#L212"><code>DepAnxClassifier.forward_backbone</code></a></td>
+<td><code>research/stable/ordinal_regression_mtl_aug_2024/model.py:212</code></td>
+<td>No-grad Whisper + WhisperLLMA, averaged per recording -&gt; [B, 1536]; lengths set to 1.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L877"><code>BERTBackbone</code></a></td>
+<td><code>kirad/base_models.py:877</code></td>
+<td>BERT on transcript tokens; returns the pooler output [ΣW, 768] (DAM 2 text branch).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L899"><code>LLAMABackbone</code></a></td>
+<td><code>kirad/base_models.py:899</code></td>
+<td>LLaMA cut to num_layers layers; embeds text as the last real token's hidden state.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Pipotheavenger/kintsugi-rad-docs/blob/main/kirad/base_models.py#L848"><code>Wav2Vec2Backbone</code></a></td>
+<td><code>kirad/base_models.py:848</code></td>
+<td>wav2vec2 encoder on raw audio, mean-pooled (not used by the stable DAM configs).</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "content.code.copy", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../assets/codemap.js" type="module"></script>
+      
+    
+  </body>
+</html>
