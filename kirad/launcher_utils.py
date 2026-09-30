@@ -1,3 +1,9 @@
+"""Turns the YAML config into objects: params, model, datasets, loaders, W&B logger.
+
+Stage: launch (plus outputs: checkpoint replication and W&B artifact logging).
+Used by scripts/launcher.py.
+"""
+
 import copy
 import os
 import socket
@@ -34,7 +40,14 @@ SPLITS = ["train", "val", "test"]
 # but this class extends its functionality to store "best" checkpoint replicas on
 # all nodes in the cluster.
 class DistributedModelCheckpoint(ModelCheckpoint):
+    """ModelCheckpoint that also keeps a copy of the best checkpoint on every node."""
+
     def on_validation_end(self, trainer, pl_module):
+        """Save best/last ckpt after validation (with tuned thresholds); replicate on nodes.
+
+        Non-zero nodes (local rank 0) store only {"state_dict"} and delete the old best.
+        Note: needs torch.distributed initialized (uses barriers).
+        """
         best_ckpt_prev = self.best_model_path
         torch.distributed.barrier()
 
@@ -63,6 +76,8 @@ class DistributedModelCheckpoint(ModelCheckpoint):
 
 
 class SchedulerParams(BaseModel):
+    """LR scheduler settings from training_params.scheduler (gamma, milestones)."""
+
     model_config = ConfigDict(
         extra="forbid",
         arbitrary_types_allowed=True,
@@ -72,6 +87,8 @@ class SchedulerParams(BaseModel):
 
 
 class OptimizerParams(BaseModel):
+    """Optimizer settings for one parameter group (lr, weight_decay)."""
+
     model_config = ConfigDict(
         extra="forbid",
         arbitrary_types_allowed=True,
@@ -81,6 +98,12 @@ class OptimizerParams(BaseModel):
 
 
 class TrainingParams(BaseModel):
+    """Validated training_params: batch sizes, epochs, monitor metric, optimizer, seed.
+
+    Grad accumulation = effective_batch_size / (world_size * batch_size); must divide.
+    Note: constructing it calls pl.seed_everything(seed).
+    """
+
     model_config = ConfigDict(
         extra="forbid",
         arbitrary_types_allowed=True,
@@ -92,8 +115,8 @@ class TrainingParams(BaseModel):
     scheduler: SchedulerParams
     optimizer: Mapping[str, OptimizerParams]
     tasks: Optional[Mapping[str, Any]] = None
-    seed: int = 42
-    early_stopping_patience: int = 10
+    seed: int = 42  # HARDCODED: default seed
+    early_stopping_patience: int = 10  # HARDCODED: default patience (validations)
     training_examples_per_eval: Optional[int] = None  # None -> once per epoch
     deterministic: bool = True
     cpus_per_worker: Optional[int] = None  # None -> (num_cpus - 1) // num_gpus
@@ -101,6 +124,7 @@ class TrainingParams(BaseModel):
     _global_batch_size: int = PrivateAttr()
 
     def __init__(self, *args, **kwargs):
+        """Compute the global batch size (WORLD_SIZE x batch_size) and seed everything."""
         super().__init__(*args, **kwargs)
         num_gpus = torch.cuda.device_count()
         world_size = int(os.environ.get("WORLD_SIZE", num_gpus)) if num_gpus > 0 else 1
@@ -111,6 +135,7 @@ class TrainingParams(BaseModel):
 
     @property
     def total_accum_grad_batches(self):
+        """Gradient-accumulation steps: effective_batch_size // global batch size."""
         quot, rem = divmod(self.effective_batch_size, self._global_batch_size)
         if rem != 0:
             raise ValueError(
@@ -122,6 +147,13 @@ class TrainingParams(BaseModel):
 
 
 class ModelParams(BaseModel):
+    """Validated model_params: model class path, config kwargs and checkpoint to load.
+
+    ckpt_path may be local, a W&B artifact URL or "entity/project/run:tag"; W&B ones
+    are downloaded. A data_params backbone_cache replaces ckpt_path (not both).
+    Note: restore_training_state with a local ckpt_path fails (`run` is undefined).
+    """
+
     model_config = ConfigDict(
         extra="forbid",
         arbitrary_types_allowed=True,
@@ -134,6 +166,7 @@ class ModelParams(BaseModel):
     _cached_backbone: bool = PrivateAttr()
 
     def __init__(self, backbone_cache: Optional[str] = None, *args, **kwargs):
+        """Resolve ckpt_path (W&B download or backbone cache) and check restored config."""
         super().__init__(*args, **kwargs)
 
         self._cached_backbone = False
@@ -192,11 +225,18 @@ class ModelParams(BaseModel):
 
 
 class LauncherConfig:
+    """Everything built from one YAML config; datasets and loaders are created lazily."""
+
     def __init__(
         self,
         config: str | Path | Mapping,
         experiment_dir: str | Path | None = None,
     ):
+        """Read YAML, parse training/data/model params and instantiate the model.
+
+        experiment_dir (default: the config's folder) is added to sys.path so the
+        experiment's model.py can be imported by model_path.
+        """
         if experiment_dir is None:
             if isinstance(config, Mapping):
                 raise ValueError(
@@ -246,6 +286,7 @@ class LauncherConfig:
         self.data_loader = dict()
 
     def _init_compute_params(self):
+        """Count GPUs/CPUs, set DataLoader workers per GPU and deterministic torch/CuBLAS."""
         # Add GCE instance name to the config
         try:
             self.config["gce_instance_name"] = socket.gethostname()
@@ -275,9 +316,15 @@ class LauncherConfig:
 
         # Makes certain CuBLAS operations deterministic:
         # https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
+        # HARDCODED: CuBLAS workspace setting required for deterministic GPU ops.
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     def _init_data_params(self):
+        """Parse data_params keys "<modality>=<class.path>" into factories + per-split params.
+
+        "metadata=..." is required; every other key (audio, text, backbone_cache) is a
+        modality dataset. Params per split come from get_params_by_split.
+        """
         self.metadata_factory = None
         self.modality_to_dataset_factory = dict()
         self.modality_params = dict()
@@ -313,6 +360,10 @@ class LauncherConfig:
             logger.warning("Backbone cache is used together with other modalities.")
 
     def _init_model(self):
+        """Import model_path, build the model and load ckpt weights (or defer full restore).
+
+        Weight loading falls back to strict=False on mismatch (partial init, printed).
+        """
         # Set the model either from `kintsugi-rad` or `kipy`.
         model_factory = import_object(self.model_params.model_path)
         self.model = model_factory(
@@ -344,6 +395,7 @@ class LauncherConfig:
             self.restore_training_state_ckpt_path = None
 
     def get_metadata(self, split: DatasetSplit) -> KintsugiMetadata:
+        """Build (once) and return the metadata object for a split."""
         try:
             metadata = self.metadata[split]
         except KeyError:
@@ -353,6 +405,10 @@ class LauncherConfig:
         return metadata
 
     def get_dataset(self, split: DatasetSplit) -> Dataset:
+        """StackDataset of metadata + each modality dataset for a split (built once).
+
+        Each item: {"metadata": ..., "audio": ..., "text": ...}, merged by broadcast_collate.
+        """
         try:
             dataset = self.dataset[split]
         except KeyError:
@@ -373,6 +429,7 @@ class LauncherConfig:
     def get_data_loader_kwargs(
         self, split: DatasetSplit, training_mode: bool
     ) -> Mapping:
+        """DataLoader kwargs: broadcast_collate, UuidSampler (shuffled + drop_last if train)."""
         metadata = self.get_metadata(split)
         split_indep_kwargs = dict(
             batch_size=self.training_params.batch_size,
@@ -393,6 +450,7 @@ class LauncherConfig:
         return {**split_indep_kwargs, **split_kwargs}
 
     def get_data_loader(self, split: DatasetSplit, training_mode: bool) -> DataLoader:
+        """DataLoader for a split (cached per split and mode); batch_size = recordings."""
         try:
             data_loader = self.data_loader[split, training_mode]
         except KeyError:
@@ -432,7 +490,9 @@ class LauncherConfig:
     def resolve_artifact_paths_in_param_dict(
         self, param_dict: Mapping[str, Any]
     ) -> dict[str, Any]:
-        """Resolves the absolute paths for any file path parameters in the parameter
+        """Make relative string params absolute when they point to an existing file.
+
+        Resolves the absolute paths for any file path parameters in the parameter
         dictionary.
 
         Parameters
@@ -463,7 +523,9 @@ class LauncherConfig:
         split: DatasetSplit,
         include_dataset_splits: bool,
     ) -> Mapping[str, Any]:
-        """Return parameters for a given split after merging the parameters from
+        """Merge config params for one split: default < val_test (val/test) < split.
+
+        Return parameters for a given split after merging the parameters from
         "default" and "val_test" sections.
 
         Parameters for a given split are set in the following order of priority:
@@ -502,9 +564,12 @@ class LauncherConfig:
 
 
 class LauncherLogger:
+    """W&B run for the experiment; logs code and pandas tables as artifacts."""
+
     def __init__(
         self, log_path: str | Path, config: Mapping, entity: str, project: str
     ):
+        """Start a WandbLogger (log_model=True uploads checkpoints) under log_path/wandb."""
         log_path = Path(log_path)
         wandb_log_path = log_path / "wandb"
         wandb_log_path.mkdir(parents=True, exist_ok=True)
@@ -522,10 +587,12 @@ class LauncherLogger:
         self.wandb_run_id = self.wandb_logger.version
 
     def log_code(self, code_path: str, artifact_name: str):
+        """Upload a source folder as the code artifact <artifact_name>-<run_id>."""
         artifact_name = f"{artifact_name}-{self.wandb_run_id}"
         self.run.log_code(code_path, artifact_name)
 
     def log_table_artifacts(self, data: Mapping[str, Mapping[str, pd.DataFrame]]):
+        """Upload {artifact: {table_name: DataFrame}} as W&B table artifacts."""
         for artifact_name, artifact_data in data.items():
             artifact_name_ = f"{artifact_name}-{self.wandb_run_id}"
             artifact_type = artifact_name

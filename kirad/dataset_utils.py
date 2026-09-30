@@ -1,4 +1,9 @@
-"""Contains utility functions for processing and manipulating datasets, primarily in
+"""Data stage helpers: load metadata CSVs, build file paths, merge rows, collate batches.
+
+broadcast_collate is the DataLoader collate_fn (set in launcher_utils). The Kintsugi
+dataset-version / GCS bucket helpers need private gsutil URIs from constants.py.
+
+Contains utility functions for processing and manipulating datasets, primarily in
 pandas DataFrame format.
 """
 
@@ -46,6 +51,10 @@ def load_dataset(
     dataset_splits: Optional[DatasetSplit | list[DatasetSplit]] = None,
     dataset_fold: Optional[int] = None,
 ) -> pd.DataFrame:
+    """Return metadata as a DataFrame: pass-through, read a CSV path, or a Kintsugi version.
+
+    Note: DatasetVersion names download private splits with gsutil; use a CSV path.
+    """
     if isinstance(dataset, pd.DataFrame):
         return dataset
     elif dataset in typing.get_args(DatasetVersion):
@@ -89,6 +98,11 @@ def load_relative_dataset(
     audio_root: Optional[str | Path] = None,
     text_root: Optional[str | Path] = None,
 ) -> pd.DataFrame:
+    """Load metadata and add audio_filename / text_filename paths from the filename column.
+
+    A Mapping input {metadata, audio_root, text_root} overrides the roots (default: cwd).
+    Paths: <audio_root>/<filename>.wav and <text_root>/<filename>.json.
+    """
     if isinstance(dataset, Mapping):
         audio_root = dataset.get("audio_root", audio_root)
         text_root = dataset.get("text_root", text_root)
@@ -96,6 +110,7 @@ def load_relative_dataset(
     df = load_dataset(dataset, data_sources, dataset_splits, dataset_fold)
     audio_root = audio_root or os.getcwd()
     text_root = text_root or os.getcwd()
+    # HARDCODED: audio files must be <filename>.wav, transcripts <filename>.json
     df["audio_filename"] = df["filename"].map(
         lambda s: os.path.expanduser(os.path.join(audio_root, str(s) + ".wav"))
     )
@@ -111,6 +126,11 @@ def load_dataset_version(
     dataset_splits: Optional[DatasetSplit | list[DatasetSplit]] = None,
     dataset_folds: Optional[int | list[int]] = None,
 ) -> dict[DataSource, dict[DatasetSplit, list[pd.DataFrame]]]:
+    """Fetch a Kintsugi dataset version (gsutil rsync) and read its split/fold CSVs.
+
+    Returns {source: {split: [DataFrame per fold]}}; test has no folds.
+    Hardcoded: METADATA_DIR/<version>/splits/<source>.<split>.fold_<k>.csv (test: no fold suffix).
+    """
     if dataset_version not in typing.get_args(DatasetVersion):
         raise ValueError(
             f"Dataset version {dataset_version} is not registered kirad/constants.py."
@@ -151,6 +171,7 @@ def load_dataset_version(
             raise ValueError(
                 f"Need to define URI for dataset version {dataset_version}."
             )
+        # HARDCODED: download via gsutil from a private GCS URI in constants.py
         cmd = [
             "gsutil",
             "-m",
@@ -203,6 +224,7 @@ def resolve_audio_path(
     is_raw_audio: bool = False,
     force_download: bool = False,
 ) -> Path:
+    """Return a local audio directory: a given path, or a synced feature-store bucket."""
     if audio_dir_or_feature_store_bucket in typing.get_args(FeatureStoreBucket):
         return resolve_audio_path_from_bucket(
             audio_dir_or_feature_store_bucket,
@@ -222,6 +244,7 @@ def resolve_audio_path_from_bucket(
     is_raw_audio: bool = False,
     force_download: bool = False,
 ) -> Path:
+    """Download a feature-store audio bucket with gsutil (if missing) and return its path."""
     if feature_store_bucket not in typing.get_args(FeatureStoreBucket):
         raise ValueError(
             f"Received feature store bucket {feature_store_bucket}; "
@@ -247,6 +270,7 @@ def resolve_audio_path_from_bucket(
 
 
 def get_cache_dir(location: FeatureStoreBucket | str | Path) -> Path:
+    """Local directory for a bucket name (AUDIO_DIR/<bucket>) or a given path."""
     if location in typing.get_args(FeatureStoreBucket):
         return AUDIO_DIR / location
     elif isinstance(location, str | Path):
@@ -265,7 +289,9 @@ def calculate_distributions(
     existing_label_distribution: Optional[DistributionData] = None,
     existing_other_distributions: Optional[dict[str, DistributionData]] = None,
 ) -> tuple[DistributionData, Optional[dict[str, DistributionData]]]:
-    """Calculate distributions for the labels and specified columns in the data
+    """Label and column distributions (histograms / category masses) used by split_dataset.
+
+    Calculate distributions for the labels and specified columns in the data
 
     The distributions will be density-normalized histograms for real-valued data, and
     probability masses for categorical data. If existing distributions are specified,
@@ -368,7 +394,11 @@ def split_dataset(
     filename_column: str = "filename",
     random_state: Optional[int] = None,
 ) -> tuple[list[pd.DataFrame], list[pd.DataFrame]]:
-    """Split a dataset into train and test folds
+    """Speaker-disjoint train/test folds, optionally matching given distributions (by KL).
+
+    Not used in training; for building new dataset splits.
+
+    Split a dataset into train and test folds
 
     Split a dataset into train and test folds, making K non-overlapping folds or 1 fold
     based on the proportion specified by test_size. If both K-fold splitting and
@@ -436,6 +466,7 @@ def split_dataset(
     if label_distribution is None and other_distributions is None:
         num_repetitions = 1
     else:
+        # HARDCODED: 10 random splits tried; the lowest-KL one is kept
         num_repetitions = 10
 
     # Remove previous data (if specified) from the current data so that the
@@ -567,7 +598,9 @@ def split_dataset(
 
 
 def get_data_type(series: pd.Series) -> str:
-    """Determine if a Pandas Series has numerical or categorical data.
+    """Return "numerical" if the Series converts to numbers, else "categorical".
+
+    Determine if a Pandas Series has numerical or categorical data.
 
     Parameters
     ----------
@@ -590,10 +623,19 @@ def get_data_type(series: pd.Series) -> str:
 
 
 def merge_df_rows_by_subject(df):
+    """Merge rows sharing user + labels + demographics into one row per subject.
+
+    Durations summed, scores_* averaged, uuid/filename/prompt/asr ids become lists;
+    the smallest UUID becomes the row index.
+    Hardcoded: the common_cols / list_cols / sum_cols column-name lists below.
+    Note: audio_filename/text_filename are not in list_cols, so they are dropped.
+    """
     # Move UUID index back to column to make it easier to recover the UUIDs from the
     # merged rows.
     df = df.reset_index()
 
+    # HARDCODED: Kintsugi CSV schema; missing columns are skipped, new ones are ignored.
+    # Rows are only merged if ALL present common_cols are equal (incl. phq/gad).
     common_cols = [
         "wave",
         "user",
@@ -619,6 +661,7 @@ def merge_df_rows_by_subject(df):
     common_cols.extend([f"gad{i}" for i in range(1, 8)])
     if "real" in df.columns:
         common_cols.append("real")
+    # HARDCODED: columns kept as per-row lists after merging
     list_cols = [
         "uuid",
         "filename",
@@ -628,6 +671,7 @@ def merge_df_rows_by_subject(df):
         "asr_operation_name",
         "asr_operation_start_time",
     ]
+    # HARDCODED: duration columns summed after merging
     sum_cols = [
         "duration",
         "prompt_vad_cut_duration",
@@ -660,6 +704,7 @@ def merge_df_rows_by_subject(df):
 def repeat_along_batch_dim(
     data: torch.Tensor | Mapping[str, torch.Tensor], repetitions: int = 1
 ) -> torch.Tensor | Mapping[str, torch.Tensor]:
+    """Tile a tensor (or dict of tensors) `repetitions` times along dim 0."""
     if isinstance(data, torch.Tensor):
         repeats = [repetitions] + [1 for _ in range(0, data.dim() - 1)]
         return data.repeat(*repeats)
@@ -673,7 +718,9 @@ def repeat_along_batch_dim(
 
 
 def broadcast_along_batch_dim(data: Any) -> tuple[Any, int]:
-    """Broadcast tensors in a nested structure to have the same batch dim, returning
+    """Tile every tensor of one sample to the largest dim 0 (= its number of windows W).
+
+    Broadcast tensors in a nested structure to have the same batch dim, returning
     the resulting structure and dim.
 
     Parameters
@@ -694,6 +741,7 @@ def broadcast_along_batch_dim(data: Any) -> tuple[Any, int]:
     """
 
     def max_batch_dim(data) -> int:
+        """Largest dim 0 among all nested tensors."""
         if isinstance(data, torch.Tensor):
             return data.shape[0]
         if isinstance(data, Mapping):
@@ -706,6 +754,7 @@ def broadcast_along_batch_dim(data: Any) -> tuple[Any, int]:
         )
 
     def broadcast_to(data, length):
+        """Repeat each nested tensor along dim 0 to `length`; must divide evenly."""
         if isinstance(data, torch.Tensor):
             batch_dim = data.shape[0]
             repetitions, remainder = divmod(length, batch_dim)
@@ -725,9 +774,12 @@ def broadcast_along_batch_dim(data: Any) -> tuple[Any, int]:
 
 
 def get_collate_fn(tensor_collate_fn: Callable[[list[torch.Tensor]], torch.Tensor]):
+    """torch default collate, but tensors are merged with tensor_collate_fn (e.g. concat)."""
+
     def tensor_collate_tensor_fn(
         batch, *args, **kwargs
     ):  # torch internals pass some args we don't need
+        """Apply tensor_collate_fn to a list of tensors."""
         return tensor_collate_fn(batch)
 
     collate_fn_map = copy.copy(default_collate_fn_map)
@@ -735,12 +787,19 @@ def get_collate_fn(tensor_collate_fn: Callable[[list[torch.Tensor]], torch.Tenso
     return partial(collate, collate_fn_map=collate_fn_map)
 
 
+# Tensors concatenated along dim 0 (not stacked): windows of all recordings -> [ΣW, ...]
 concat_collate = get_collate_fn(torch.concat)
 concat_collate_to_cpu = get_collate_fn(lambda batch: torch.concat(batch).to("cpu"))
 
 
 def broadcast_collate(batch: list[Mapping[str, Any]]) -> dict[str, Any]:
-    """Collate function that broadcasts the batch dimension of the features for each
+    """DataLoader collate: concat windows of all recordings; length = windows per recording.
+
+    Per sample, modalities are tiled to the same W (e.g. text [1, L] -> [W, L]).
+    Shapes: uuid [B], label.<task>.primary [B], length [B],
+    features.audio [ΣW, 480000] or [ΣW, 80, 3000], features.text.* [ΣW, L].
+
+    Collate function that broadcasts the batch dimension of the features for each
     modality to match the largest batch dimension across the modalities.
 
     Parameters
@@ -756,6 +815,7 @@ def broadcast_collate(batch: list[Mapping[str, Any]]) -> dict[str, Any]:
     """
 
     def broadcast_desired(batch):
+        """Flatten one sample: uuid/label from metadata, tiled features, and length W."""
         out = {
             **batch["metadata"]
         }  # contains DatasetFields.UUID and DatasetFields.LABEL

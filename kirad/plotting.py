@@ -1,4 +1,10 @@
-"""Miscellaneous utility functions for generating plots."""
+"""Matplotlib plots of the indeterminate-band trade-off for one task's scores.
+
+Stage: outputs/analysis (offline, after training). Input is the DataFrame from
+kirad.utils.get_dataframe_with_scores.
+
+Miscellaneous utility functions for generating plots.
+"""
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +16,9 @@ from .metrics import IndetSnSpArray
 def plot_indeterminate_analysis(
     df: pd.DataFrame, task: str = "depression", show: bool = True
 ):
-    """Analyze performance achievable by including an indeterminate output option and plot.
+    """Plot thresholds and Sn=Sp vs indeterminate budget, plus ROC curves per binary cut.
+
+    Analyze performance achievable by including an indeterminate output option and plot.
 
     Parameters
     ----------
@@ -57,7 +65,7 @@ def plot_indeterminate_analysis(
 
     for i, indet_sn_sp_array in indet_sn_sp_arrays.items():
         plt.figure()
-        for budget in np.linspace(0.0, 0.7, 8):
+        for budget in np.linspace(0.0, 0.7, 8):  # HARDCODED: ROC budgets 0%..70%, step 10%
             roc_curve = indet_sn_sp_array.roc_curve(budget)
             plt.plot(roc_curve.sp, roc_curve.sn, label=f"{budget=:.1f}")
         plt.xlim(1.0, 0.0)

@@ -12,7 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+"""Model stage: raw audio windows -> Whisper log-mel features, computed on the GPU in torch.
+
+Used only by DAM 1 (mar_2024 model.forward_backbone); DAM 2/3 get log-mel from the HF
+extractor in KintsugiAudioDataset.
+
 Feature extractor class for Whisper in native torch code. Modified from
 `transformers.models.whisper.feature_extraction_whisper`.
 """
@@ -23,7 +27,11 @@ from kirad.constants import IDEAL_LOGMEL_ENERGIES
 
 
 class WhisperTorchFeatureExtractor(torch.nn.Module):
-    r"""
+    r"""Torch Whisper log-mel extractor: 80 bins, 25 ms window, 10 ms hop, 16 kHz.
+
+    Also applies per-window audio normalization and the IDEAL_LOGMEL_ENERGIES profile.
+    Shapes: [ΣW, 480000] -> [ΣW, 80, 3000].
+
     Constructs a Whisper feature extractor.
 
     Args:
@@ -57,6 +65,7 @@ class WhisperTorchFeatureExtractor(torch.nn.Module):
         normalize_audio=True,
         ideal_logmel_energies=True,
     ):
+        """Precompute Hann window and Slaney mel filters; register the energy profile."""
         super().__init__()
         self.n_fft = n_fft
         self.hop_length = hop_length
@@ -69,12 +78,14 @@ class WhisperTorchFeatureExtractor(torch.nn.Module):
                 num_frequency_bins=1 + n_fft // 2,
                 num_mel_filters=feature_size,
                 min_frequency=0.0,
+                # HARDCODED: 16 kHz input, mel filters up to 8 kHz (Whisper setup)
                 max_frequency=8000.0,
                 sampling_rate=16000,
                 norm="slaney",
                 mel_scale="slaney",
             )
         )
+        # HARDCODED: fixed per-bin target energies from kirad/constants.py (80 values)
         # To enable model compilation, ideal_logmel_energies should be registered as a buffer or Parameter
         self.register_buffer(
             "ideal_logmel_energies_stats",
@@ -82,7 +93,10 @@ class WhisperTorchFeatureExtractor(torch.nn.Module):
         )
 
     def _torch_extract_fbank_features(self, waveform: torch.Tensor) -> torch.Tensor:
-        """
+        """Log10 mel spectrogram, clipped to 8 below the max, scaled (x + 4) / 4 as Whisper.
+
+        Shapes: [ΣW, T] -> [ΣW, 80, T // 160] (last STFT frame dropped).
+
         Compute the log-mel spectrogram of the audio using PyTorch's GPU-accelerated STFT implementation with batching,
         yielding results similar to cpu computing with 1e-5 tolerance.
         """
@@ -109,6 +123,7 @@ class WhisperTorchFeatureExtractor(torch.nn.Module):
         log_spec = torch.clamp(mel_spec, min=1e-10).log10()
         if waveform.dim() == 2:
             max_val = log_spec.max(dim=2, keepdim=True)[0].max(dim=1, keepdim=True)[0]
+            # HARDCODED: Whisper's 8 (log10) = 80 dB dynamic range and (x + 4) / 4 scaling
             log_spec = torch.maximum(log_spec, max_val - 8.0)
         else:
             log_spec = torch.maximum(log_spec, log_spec.max() - 8.0)
@@ -118,7 +133,14 @@ class WhisperTorchFeatureExtractor(torch.nn.Module):
         self,
         batched_speech: torch.Tensor,
     ) -> torch.Tensor:
-        """Compute mel filter bank features from a batch x samples tensor of audio."""
+        """Normalize each window, compute log-mel, shift bins to IDEAL_LOGMEL_ENERGIES.
+
+        normalize_audio: zero mean, unit variance per window (in float64).
+        ideal_logmel_energies: add (target - time-mean) per bin.
+        Shapes: [ΣW, 480000] -> [ΣW, 80, 3000], returned in the input dtype.
+
+        Compute mel filter bank features from a batch x samples tensor of audio.
+        """
         # Got NaNs when doing feature computations in half or single precision
         batched_speech_double = batched_speech.double()
 

@@ -1,4 +1,10 @@
-"""Various utility functions, such as label smoothing and computing thresholds."""
+"""Shared helpers: per-recording averaging, W&B artifact I/O, dynamic imports, analysis.
+
+Stages: launch (import_object, localize_wandb_artifact), loss (segment mean/variance),
+outputs (cache_backbone, score dataframes, indeterminate analysis, report cards).
+
+Various utility functions, such as label smoothing and computing thresholds.
+"""
 import configparser
 import copy
 import csv
@@ -32,7 +38,9 @@ from kirad.metrics import IndetRocCurve, IndetSnSpArray
 def load_audio(
     fp: str | Path, target_sample_rate: Optional[int] = None
 ) -> Optional[torch.Tensor]:
-    """Load and resample an audio file.
+    """Load channel 0 of an audio file, optionally resampling; not used by the datasets.
+
+    Load and resample an audio file.
 
     Returns None if the audio cannot be loaded or is empty.
 
@@ -76,7 +84,9 @@ def load_audio(
 
 
 def average_tensor_in_segments(tensor: torch.Tensor, lengths: list[int] | torch.Tensor):
-    """Average segments of a tensor based on a list of lengths
+    """Mean over each recording's windows: [ΣW, ...] -> [B, ...] using `length`.
+
+    Average segments of a tensor based on a list of lengths
 
     Parameters
     ----------
@@ -106,7 +116,9 @@ def average_tensor_in_segments(tensor: torch.Tensor, lengths: list[int] | torch.
 def average_and_variance_tensor_in_segments(
     tensor: torch.Tensor, lengths: list[int] | torch.Tensor
 ):
-    """Average and variance of segments of a tensor based on a list of lengths
+    """Per-recording mean and (biased) variance of window scores: [ΣW, ...] -> two [B, ...].
+
+    Average and variance of segments of a tensor based on a list of lengths
 
     Parameters
     ----------
@@ -135,7 +147,11 @@ def localize_wandb_artifact(
     tag: str = "best",
     return_dir: bool = False,
 ):
-    """Download an artifact from wandb and return its local path."""
+    """Download a W&B artifact once to ~/.cache/kintsugi and return its local path.
+
+    Download an artifact from wandb and return its local path.
+    Note: returns the first file in the folder unless `return_dir`; cache is never refreshed.
+    """
     artifact_dir = USER_CACHE_DIR_KINTSUGI / f"wandb_run_{run.id}" / artifact_name / tag
 
     # If the directory doesn't exist, the artifact was not cached before,
@@ -157,7 +173,9 @@ def localize_wandb_artifact(
 def get_wandb_run_name_tag_from_artifact_url(
     url: str,
 ) -> Tuple[wandb.apis.public.Run, str, str]:
-    """Resolves wandb run and name from artifact url
+    """Parse a W&B artifact URL into (run that logged it, artifact name, tag).
+
+    Resolves wandb run and name from artifact url
 
     Parameters
     ----------
@@ -175,6 +193,7 @@ def get_wandb_run_name_tag_from_artifact_url(
 
     #
     ckpt_path = url.replace("https://", "").split("/")
+    # HARDCODED: URL layout host/entity/project/artifacts/type/name[/tag]; tag defaults to "best"
     assert 6 <= len(ckpt_path) <= 7  # len is 6 when model tag is omitted
 
     #
@@ -194,13 +213,16 @@ class TSVAccumulator:
     """Helper for formatting tab-separated-value data with section headers in the first row."""
 
     def __init__(self):
+        """Start with an empty header and one empty row."""
         self.header = ""
         self.rows = [[]]
 
     def set_header(self, header: str):
+        """Set the section prefix used by later `write` calls."""
         self.header = header
 
     def write(self, first: str, *rest: str) -> None:
+        """Add one column: "<header> - <first>" in row 0, then `rest` down the rows."""
         entries = (f"{self.header} - {first}",) + rest
         for _ in range(len(entries) - len(self.rows)):
             self.rows.append([""] * len(self.rows[0]))
@@ -209,6 +231,7 @@ class TSVAccumulator:
             self.rows[i].append(entry)
 
     def __str__(self):
+        """Render rows as TSV text."""
         buffer = StringIO()
         writer = csv.writer(buffer, delimiter="\t", lineterminator="\n")
         writer.writerows(self.rows)
@@ -220,7 +243,10 @@ def get_wandb_report_card_tsvs(
     wandb_path_test: Optional[str] = None,
     threshold_objective: str = "macro_f1",
 ) -> dict[str, str]:
-    """Create model report cards for each task, suitable for pasting into google sheets.
+    """Build a TSV report card per task from a W&B run and log it back as an artifact.
+
+    Create model report cards for each task, suitable for pasting into google sheets.
+    Note: reads the "best" checkpoint's thresholds and test summary keys (sn_eq_sp@0%i, auroc@0%i).
 
     Parameters
     ---------
@@ -290,6 +316,7 @@ def get_wandb_report_card_tsvs(
             ]
             baseline = float("nan")
             min_max = "⬇️" if class_metric == "absolute_error" else "⬆️"
+            # HARDCODED: looks for baseline_const_0..3 only (tasks with up to 4 classes)
             for const in range(4):
                 try:
                     baseline = run_test.summary[
@@ -327,7 +354,9 @@ def get_wandb_report_card_tsvs_with_instructions(
     wandb_path_test: Optional[str] = None,
     threshold_objective="macro_f1",
 ) -> str:
-    """Create model report cards for each task, and instructions for pasting into google sheets.
+    """Report cards from get_wandb_report_card_tsvs, prefixed with paste instructions.
+
+    Create model report cards for each task, and instructions for pasting into google sheets.
 
     Parameters
     ---------
@@ -367,14 +396,16 @@ def str_to_tensor(s: str):
 
 
 def strs_to_tensor(strs: Sequence[str]):
-    """Encode a sequence of python strings of equal length as a 2-d `torch.Tensor` of `uint8`s."""
+    """Encode strings as a zero-padded 2-d uint8 tensor (uuids for MultiCatMetric).
+
+    Encode a sequence of python strings of equal length as a 2-d `torch.Tensor` of `uint8`s."""
     return torch.nn.utils.rnn.pad_sequence(
         tuple(map(str_to_tensor, strs)), batch_first=True
     )
 
 
 def tensor_to_str(t: torch.Tensor) -> str:
-    """Decode a 1-d `torch.Tensor` of `uint8`s into a python string."""
+    """Decode a 1-d `torch.Tensor` of `uint8`s into a python string (strips zero padding)."""
     return bytes(t.cpu().numpy().data).decode("utf-8").rstrip("\x00")
 
 
@@ -389,7 +420,9 @@ def get_dataframe_with_scores(
     scores_tag: Optional[str] = None,
     model_tag: Optional[str] = None,
 ) -> pd.DataFrame:
-    """Fetches val or test metadata used for a training run and joins with the scores computed during training.
+    """Join a run's metadata CSVs with its W&B scores-<task>-<split> tables on uuid.
+
+    Fetches val or test metadata used for a training run and joins with the scores computed during training.
 
     Arguments
     ---------
@@ -416,7 +449,7 @@ def get_dataframe_with_scores(
             raise ValueError(
                 f"Test split is only evaluated once; invalid combination of {scores_tag=} and {model_tag=}"
             )
-        scores_tag = "v0"
+        scores_tag = "v0"  # HARDCODED: test scores are logged once, as version v0
     else:
         if scores_tag is not None and model_tag is not None:
             raise ValueError(
@@ -521,12 +554,17 @@ def get_dataframe_with_scores(
 def indet_analysis(
     wandb_path: str,
     wandb_path_test: Optional[str] = None,
-    budgets: Iterable[float] = tuple(np.linspace(0.0, 0.9, 10)),
+    budgets: Iterable[float] = tuple(np.linspace(0.0, 0.9, 10)),  # HARDCODED: budgets 0%..90%
 ):
+    """Tune sn_eq_sp thresholds on val per budget and binary cut, then measure them on test.
+
+    Returns (per-cut records, mean over cuts per task and budget) as DataFrames.
+    Hardcoded: tasks ("anxiety", "depression"); budgets 0.0..0.9 in steps of 0.1.
+    """
     df_val = get_dataframe_with_scores(wandb_path, "val")
     df_test = get_dataframe_with_scores(wandb_path_test or wandb_path, "test")
     records = []
-    for task in ("anxiety", "depression"):
+    for task in ("anxiety", "depression"):  # HARDCODED: task names; edit for other outcomes
         labels_val = df_val[f"quantized_labels_{task}"]
         scores_val = df_val[f"scores_{task}"]
         labels_test = df_test[f"quantized_labels_{task}"]
@@ -571,7 +609,10 @@ def analyze_dataframe_with_scores(
     quantize_and_groupby: dict[str, Optional[Sequence]],
     tasks: Iterable[str] = ("anxiety", "depression"),
 ):
-    """Group dataframe by specified columns (possibly quantizing), computing metrics for each group.
+    """Mean AUROC and sn_eq_sp (0% indet) over binary cuts, per subgroup of the dataframe.
+
+    Group dataframe by specified columns (possibly quantizing), computing metrics for each group.
+    Note: adds `quantized_<key>` columns to `df` in place.
 
     Arguments
     ---------
@@ -612,7 +653,9 @@ def analyze_dataframe_with_scores(
 
 
 def get_package_path(package: Literal["kipy", "kirad"]) -> Path:
-    """Get local paths to `kintsugi-rad` and `kipy`.
+    """Repo root of kipy or kirad (env KIPY_PATH / KINTSUGI_RAD_PATH, else from import).
+
+    Get local paths to `kintsugi-rad` and `kipy`.
 
     Use the paths in the environment variables KIPY_PATH and KINTSUGI_RAD_PATH if
     specified. Otherwise, first find the paths to the `kipy` and `kirad` packages. The
@@ -650,7 +693,10 @@ def get_package_path(package: Literal["kipy", "kirad"]) -> Path:
 
 
 def get_package_info(package: Literal["kipy", "kirad"]) -> Mapping[str, str]:
-    """Get package version and git commit hash for kipy and kirad.
+    """Version (from setup.cfg) and git commit/dirty state of kipy or kirad.
+
+    Get package version and git commit hash for kipy and kirad.
+    Note: raises if the package is not importable, e.g. the private kipy.
 
     Parameters
     ----------
@@ -699,7 +745,9 @@ def get_package_info(package: Literal["kipy", "kirad"]) -> Mapping[str, str]:
 
 
 def import_object(object_path: str) -> type:
-    """Return a reference to the object specified by the object path.
+    """Import a class/function from a dotted path, e.g. "model.DepAnxClassifier".
+
+    Return a reference to the object specified by the object path.
 
     Parameters
     ----------
@@ -725,6 +773,7 @@ def import_object(object_path: str) -> type:
 
 
 def transfer_to_cuda(x, device=0):
+    """Move a tensor or a (nested) dict of tensors to a CUDA device."""
     if isinstance(x, torch.Tensor):
         return x.cuda(device)
 
@@ -743,7 +792,9 @@ def cache_backbone(
     state_dict: dict,
 ) -> dict:
 
-    """Runs inference on a backbone and stores it, along with inference results,
+    """Run the backbone on all datasets, gather outputs by uuid across ranks, log to W&B.
+
+    Runs inference on a backbone and stores it, along with inference results,
     into wandb by using current wandb_logger session.
 
     Parameters
@@ -827,7 +878,9 @@ def cache_backbone(
 
 
 def read_whisper_timestamped_json(json_file: str | Path) -> str:
-    """Get the text transcription from the JSON file output by whisper-timestamped.
+    """Transcript text ("text" field) from a whisper-timestamped JSON.
+
+    Get the text transcription from the JSON file output by whisper-timestamped.
 
     Parameters
     ----------
@@ -846,7 +899,9 @@ def read_whisper_timestamped_json(json_file: str | Path) -> str:
 
 
 def read_google_asr_json(json_file: str | Path) -> str:
-    """Get the text transcription from the JSON file output by the Google Speech API.
+    """Transcript from a Google Speech API JSON: top alternative of each result, joined.
+
+    Get the text transcription from the JSON file output by the Google Speech API.
 
     Parameters
     ----------
@@ -871,7 +926,9 @@ def read_google_asr_json(json_file: str | Path) -> str:
 
 
 def flat_to_nested_dict(d_in: Mapping, sep: str = "."):
-    """Convert a flat dict with dot-separated keys to a nested dict so e.g. `d_out['a']['b']['c'] = d_in['a.b.c']`.
+    """Split dot-separated keys into nested dicts.
+
+    Convert a flat dict with dot-separated keys to a nested dict so e.g. `d_out['a']['b']['c'] = d_in['a.b.c']`.
 
     >>> d_in = {"first.second.third" : 3, "first.other": 4}
     >>> d_out = flat_to_nested_dict(d_in)
@@ -897,7 +954,9 @@ def flat_to_nested_dict(d_in: Mapping, sep: str = "."):
 def nested_to_flat_dict(
     d_in: Mapping, d_out: Optional[Mapping] = None, prefix: Optional[str] = None
 ):
-    """Convert a nested dict to a flat one with dot-separated keys so e.g. `d_out['a.b.c'] = d_in['a']['b']['c']`.
+    """Flatten nested dicts into dot-separated keys.
+
+    Convert a nested dict to a flat one with dot-separated keys so e.g. `d_out['a.b.c'] = d_in['a']['b']['c']`.
 
     >>> d_in = {"first": {"second": {"third": 3}, "other": 4}}
     >>> d_out = nested_to_flat_dict(d_in)
@@ -918,7 +977,9 @@ def nested_to_flat_dict(
 
 
 def combine_backbone_modality_state_dicts(**backbone_dicts: Mapping):
-    """Create a DAM 2 style backbone-only state_dict from the backbones of the given DAM 1 or 2 style state_dicts.
+    """Merge backbones of several checkpoints into one DAM 2 state_dict (backbone.<key>.*).
+
+    Create a DAM 2 style backbone-only state_dict from the backbones of the given DAM 1 or 2 style state_dicts.
 
     e.g. `combine_backbone_state_dicts(audio=dam_1_state_dict, text=dam_2_state_dict)`.
 
@@ -936,7 +997,10 @@ def combine_backbone_modality_state_dicts(**backbone_dicts: Mapping):
 def combine_backbone_modality_state_dicts_from_wandb(
     output_filename: str, **backbone_run_ids: str
 ):
-    """Create a checkpoint for a DAM 2 style backbone-only state_dict from wandb run ids of individual backbones."""
+    """Save a merged DAM 2 backbone checkpoint built from the "best" models of W&B runs.
+
+    Create a checkpoint for a DAM 2 style backbone-only state_dict from wandb run ids of individual backbones.
+    """
     api = wandb.Api()
     torch.save(
         combine_backbone_modality_state_dicts(
@@ -952,11 +1016,13 @@ def combine_backbone_modality_state_dicts_from_wandb(
 
 
 def dataframe_to_wandb_table(*, dataframe, **kwargs):
+    """wandb.Table from a DataFrame, raising W&B's row limit so large tables are not cut."""
     wandb.Table.MAX_ARTIFACT_ROWS = max(wandb.Table.MAX_ARTIFACT_ROWS, len(dataframe))
     return wandb.Table(dataframe=dataframe, **kwargs)
 
 
 def open_single_file_wandb_artifact(artifact: wandb.Artifact):
+    """Download the only file of a W&B artifact and return an open handle."""
     (file,) = iter(artifact.files())
     # Ideally we'd use exist_ok=True instead of replace=True, but wandb has a bug wherein
     # exist_ok uses files from other runs instead of downoading the file for the correct run
@@ -964,7 +1030,10 @@ def open_single_file_wandb_artifact(artifact: wandb.Artifact):
 
 
 def wandb_table_artifact_to_dataframe(artifact: wandb.Artifact):
-    """Get dataframe from a wandb artifact containing a single table much faster than using `artifact.get`."""
+    """DataFrame from a single-table W&B artifact, read directly from its JSON.
+
+    Get dataframe from a wandb artifact containing a single table much faster than using `artifact.get`.
+    """
     with open_single_file_wandb_artifact(artifact) as f:
         table_dict = json.load(f)
     return pd.DataFrame.from_records(table_dict["data"], columns=table_dict["columns"])

@@ -1,0 +1,3 @@
+# kirad.constants
+
+::: kirad.constants
