@@ -1,4 +1,10 @@
-"""Base datasets and data loaders. Currently only contains the audio loader for
+"""Data stage: metadata table, per-modality datasets (audio, text, cache) and UUID sampler.
+
+KintsugiMetadata loads the CSV and labels; the audio/text datasets return one recording's
+windows / tokens by UUID; launcher_utils stacks them and dataset_utils.broadcast_collate
+batches.
+
+Base datasets and data loaders. Currently only contains the audio loader for
 the Whisper Medium backbone."""
 
 import operator
@@ -45,10 +51,14 @@ from .utils import (
     read_whisper_timestamped_json,
 )
 
+# HARDCODED: 30 s windows (= Whisper input length); also the default min_duration filter
 INFERENCE_WINDOW_SIZE = 30
+# HARDCODED: default overlap only for direct calls; datasets pass max_overlap_frac (0.0)
 MAX_INFERENCE_WINDOW_OVERLAP_FRACTION = 1 / 3
+# Unused in this repo (batch size comes from the config).
 INFERENCE_BATCH_SIZE = 16
 
+# HARDCODED: task -> CSV label column (depression = PHQ, anxiety = GAD)
 DEFAULT_LABEL_COLUMN = {"depression": "phq", "anxiety": "gad"}
 MERGE_ROWS_BY_SUBJECT_VALUES = Literal[False, "many_to_one", "many_to_many"]
 TEXT_OUTPUT_PER_SAMPLE_VALUES = Literal["cyclic", "merge"]
@@ -58,7 +68,10 @@ WINDOW_METHOD_VALUES = Literal[
 
 
 class KintsugiMetadata(BaseModel, Dataset):
-    """
+    """Metadata table indexed by UUID: loads CSV, merges KD scores, filters by duration.
+
+    Note: duration_column is required (num_windows and duration filters use it).
+
     Class for reading and processing metadata for training.
 
     Attributes
@@ -171,6 +184,7 @@ class KintsugiMetadata(BaseModel, Dataset):
     _df: pd.DataFrame = PrivateAttr()
 
     def __init__(self, *args, **kwargs):
+        """Load and concatenate all metadata sources, index by uuid, preprocess, filter."""
         super().__init__(*args, **kwargs)
         if not isinstance(self.df_or_dataset_version, list):
             self.df_or_dataset_version = [self.df_or_dataset_version]
@@ -191,6 +205,11 @@ class KintsugiMetadata(BaseModel, Dataset):
         self.filter_metadata()
 
     def preprocess_metadata(self):
+        """Join KD score targets, optionally merge rows per subject, count windows per recording.
+
+        Adds column num_windows (windows of the "all" method per recording).
+        Note: uses its own max_overlap_frac; keep it equal to the audio dataset's.
+        """
         if self.score_targets_csv is not None:
             score_target_df = pd.read_csv(self.score_targets_csv)
             score_target_df.set_index("uuid", inplace=True)
@@ -230,6 +249,8 @@ class KintsugiMetadata(BaseModel, Dataset):
         )
 
     def filter_metadata(self):
+        """Subsample `fraction` of rows, then drop recordings outside min/max duration (s)."""
+        # HARDCODED: random_state=1 for the `fraction` subsample
         self._df = self._df.sample(frac=self.fraction, random_state=1)
         logger.info(f"Keeping {self.fraction:0.2%} of samples.")
         orig_len = len(self._df)
@@ -264,6 +285,10 @@ class KintsugiMetadata(BaseModel, Dataset):
         )
 
     def __getitem__(self, uuid: str) -> dict[str, str | dict[str, int | float]]:
+        """Return {uuid, label: {task: {primary: raw score, kd: teacher score}}} for one UUID.
+
+        kd is added only when a scores_<task> column exists (from score_targets_csv).
+        """
         row = self._df.loc[uuid]
         label = {
             task: {DatasetFields.LabelFields.PRIMARY: row[label_column]}
@@ -278,6 +303,7 @@ class KintsugiMetadata(BaseModel, Dataset):
         return {DatasetFields.UUID: uuid, DatasetFields.LABEL: label}
 
     def __len__(self) -> int:
+        """Number of recordings after filtering."""
         return len(self._df)
 
 
@@ -285,6 +311,8 @@ class KintsugiDatasetBase(
     BaseModel,
     Dataset,
 ):
+    """Base for modality datasets: holds the shared KintsugiMetadata; length = its rows."""
+
     model_config = ConfigDict(
         extra="forbid",
         arbitrary_types_allowed=True,
@@ -292,15 +320,20 @@ class KintsugiDatasetBase(
     metadata: KintsugiMetadata
 
     def __len__(self) -> int:
+        """Number of recordings in the shared metadata."""
         return len(self.metadata)
 
 
 def dummy_preprocessor(x, *args, **kwargs):
+    """Stack raw window arrays into a tensor [W, samples]; used when preprocessor=False."""
     return torch.from_numpy(np.array(x))
 
 
 class KintsugiAudioDataset(KintsugiDatasetBase):
-    """
+    """Audio by UUID: loads WAV, optional augmentations, cuts windows, optional log-mel.
+
+    Shapes: raw [W, 480000] if preprocessor=False, else HF log-mel [W, 80, 3000].
+
     An audio dataset that processes and generates log-mel spectrogram features from
     audio files.
 
@@ -336,6 +369,7 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
         WhisperFeatureExtractor).
     """
 
+    # HARDCODED: HF feature extractor name; mar_2024/config.yaml sets false (log-mel on GPU)
     preprocessor: str | Literal[False] = "openai/whisper-small.en"
     normalize_audio: bool = False
     normalize_features: bool = False
@@ -351,6 +385,10 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
     _augmentations: list[Tuple[float, Callable]] = PrivateAttr(default_factory=list)
 
     def __init__(self, *args, **kwargs):
+        """Load ideal_logmel_energies, build augmentations from config, build preprocessor.
+
+        Each augmentation config is {class_name, params, aug_prob}.
+        """
         super().__init__(*args, **kwargs)
         if self.ideal_logmel_energies is not None:
             if isinstance(self.ideal_logmel_energies, str | Path):
@@ -371,6 +409,7 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
         self.init_data_processor()
 
     def init_data_processor(self):
+        """Create the windowing + feature function (HF extractor or raw passthrough)."""
         if self.preprocessor:
             preprocessor = AutoFeatureExtractor.from_pretrained(self.preprocessor)
         else:
@@ -389,7 +428,12 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
         )
 
     def __getitem__(self, uuid: str) -> torch.Tensor:
-        """Loads an audio tensor.
+        """Load, concatenate (channel 0), augment and window one recording's audio.
+
+        Note: a sample rate other than 16 kHz only logs a warning; audio is not resampled.
+        Shapes: [W, 480000] raw or [W, 80, 3000] log-mel.
+
+        Loads an audio tensor.
 
         Parameters
         ----------
@@ -427,6 +471,7 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
                 )
 
             if new_audio.dim() == 2:
+                # HARDCODED: only channel 0 is used (stereo files lose the other channel)
                 new_audio = new_audio[0]
             audio = torch.cat((audio, new_audio), dim=0)
             srs.add(sr)
@@ -443,6 +488,7 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
                 audio = aug(audio)
 
         features = self._preprocessor_with_audio_normalization(audio, sr)
+        # "window_index" is not created in this repo; branch keeps two adjacent windows
         if "window_index" in self.metadata._df.columns:
             window_index_a = row.window_index
             window_index_b = (window_index_a + 1) % row.num_windows
@@ -454,7 +500,8 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
 
 
 class KintsugiTextDataset(KintsugiDatasetBase):
-    """
+    """Transcript by UUID: reads ASR JSON and tokenizes it (BERT by default).
+
     A text dataset that processes and tokenizes strings using a tokenizer (eg. BERT
     tokenizer).
 
@@ -482,6 +529,7 @@ class KintsugiTextDataset(KintsugiDatasetBase):
         - "merge": merge all strings in the list into a single string.
     """
 
+    # HARDCODED: tokenizer name (DAM 2 text branch); a W&B artifact URL is also accepted
     preprocessor: str | Path = "google-bert/bert-base-uncased"
     text_output_per_sample: TEXT_OUTPUT_PER_SAMPLE_VALUES = "merge"
     prompt: Optional[str] = None
@@ -491,10 +539,12 @@ class KintsugiTextDataset(KintsugiDatasetBase):
     _tokenizer: Callable[[str], BatchEncoding] = PrivateAttr()
 
     def __init__(self, *args, **kwargs):
+        """Build the tokenizer after pydantic validation."""
         super().__init__(*args, **kwargs)
         self.init_data_processor()
 
     def init_data_processor(self):
+        """Load the tokenizer (local/HF name or W&B artifact) and wrap it with get_tokenizer."""
 
         tokenizer_path = self.preprocessor
         if self.preprocessor.startswith("https:"):
@@ -506,7 +556,13 @@ class KintsugiTextDataset(KintsugiDatasetBase):
         self._tokenizer = get_tokenizer(tokenizer, self.prompt, self.max_tokens)
 
     def __getitem__(self, uuid: str) -> dict[str, torch.Tensor]:
-        """Loads an audio tensor.
+        """Read the transcript JSON(s) of one recording and tokenize them.
+
+        Note: only whisper_timestamped JSON ("text" field) works; the Google ASR
+        fallback reopens the same path, so it never succeeds.
+        Shapes: input_ids/attention_mask [1, L] ("merge") or [W, L] ("cyclic").
+
+        Loads an audio tensor.
 
         Parameters
         ----------
@@ -553,7 +609,9 @@ class KintsugiTextDataset(KintsugiDatasetBase):
 
 
 class KintsugiCacheDataset(KintsugiDatasetBase):
-    """A dataset that returns features from a backbone cache.
+    """Precomputed backbone features by UUID (DAM 3 teacher cache), optional dim slice.
+
+    A dataset that returns features from a backbone cache.
 
     Attributes
     ----------
@@ -572,6 +630,7 @@ class KintsugiCacheDataset(KintsugiDatasetBase):
     feat_end_idx: Optional[int] = None
 
     def __init__(self, *args, **kwargs):
+        """Load the cache (DataFrame or W&B artifact URL) and index it by uuid."""
         super().__init__(*args, **kwargs)
         if isinstance(self.backbone_cache, str | Path):
             # Load cache from W&B
@@ -600,6 +659,7 @@ class KintsugiCacheDataset(KintsugiDatasetBase):
         self._process_cache()
 
     def _process_cache(self):
+        """Drop metadata rows whose UUID is not in the cache (modifies shared metadata)."""
 
         # Filter out UUIDs from the metadata that aren't in the backbone cache.
         mask = self.metadata._df.index.isin(self.backbone_cache.index)
@@ -614,6 +674,7 @@ class KintsugiCacheDataset(KintsugiDatasetBase):
         self.metadata._df = self.metadata._df[mask]
 
     def __getitem__(self, uuid: str) -> torch.Tensor:
+        """Cached features of one UUID, sliced to [feat_start_idx:feat_end_idx] on dim 1."""
         # we assume the features are contained in dim = 1, but tensor can have
         # an arbitrary number of dimensions
         return self.backbone_cache.loc[uuid]["feat"][
@@ -622,7 +683,10 @@ class KintsugiCacheDataset(KintsugiDatasetBase):
 
 
 class UuidSampler(Sampler[str]):
-    """Provides a random sampler to sample UUIDs from the metadata."""
+    """Yields metadata UUIDs (shuffled for train, sequential for val/test) for the loader.
+
+    Provides a random sampler to sample UUIDs from the metadata.
+    """
 
     def __init__(
         self,
@@ -630,6 +694,7 @@ class UuidSampler(Sampler[str]):
         shuffle: bool = False,
         distributed: bool = False,
     ):
+        """Wrap a Random, Sequential or Distributed sampler over the UUID list."""
         self.uuids = metadata._df.index.tolist()
         if distributed:
             self.sampler = DistributedSampler(self.uuids, shuffle=shuffle)
@@ -642,10 +707,12 @@ class UuidSampler(Sampler[str]):
                 self.sampler = SequentialSampler(self.uuids)
 
     def __iter__(self) -> Iterator[str]:
+        """Yield UUIDs in sampler order."""
         for idx in self.sampler:
             yield self.uuids[idx]
 
     def __len__(self) -> int:
+        """Number of UUIDs."""
         return len(self.uuids)
 
 
@@ -655,7 +722,12 @@ def get_window_starts(
     inference_window_samples: int,
     max_inference_window_overlap_fraction: float = MAX_INFERENCE_WINDOW_OVERLAP_FRACTION,
 ) -> int | Iterable[int]:
-    """Calculate the audio windows based on the audio duration. Each audio window is inference_window_samples long.
+    """Start sample(s) of the windows cut from one recording, by window_method.
+
+    "all": evenly spaced via np.linspace, hop >= (1 - overlap) * window, >= 1 window.
+    "single_start": 0. "single_random": one random start. "random_adjacent_pair": 2 starts.
+
+    Calculate the audio windows based on the audio duration. Each audio window is inference_window_samples long.
 
     A maximum overlap of max_inference_window_overlap_samples is used, but the overlap is flexible so that as much audio
     as possible is used.
@@ -704,14 +776,24 @@ def get_preprocessor_with_audio_normalization(
     max_overlap_frac: float = MAX_INFERENCE_WINDOW_OVERLAP_FRACTION,
     pad_last_chunk_to_full: bool = False,
 ) -> Callable[..., torch.Tensor]:
+    """Build the function audio [T] -> windows -> features used by KintsugiAudioDataset.
+
+    Steps: optional DC removal + peak scaling to [-1, 1], optional zero-pad to full
+    windows, cut windows (get_window_starts), run preprocessor, optional per-bin
+    shift so each log-mel bin's time-mean equals ideal_logmel_energies.
+    Shapes: [W, window samples] raw, or [W, 80, 3000] with the HF Whisper extractor.
+    """
+
     def forward(
         audio: torch.Tensor, sampling_rate: int = EXPECTED_SAMPLE_RATE
     ) -> torch.Tensor:
+        """Turn one recording's waveform [T] into stacked window features [W, ...]."""
         if normalize_audio:
             # Remove DC offset and scale amplitude to [-1, 1]
             audio = audio - torch.mean(audio)
             audio = audio / torch.max(torch.abs(audio))
 
+        # window length uses the file's own sample rate (30 s * 16 kHz = 480,000)
         chunk_samples = sampling_rate * trim_duration
 
         # pad audio in a way, so that the last chunk is not dropped
@@ -762,7 +844,9 @@ def get_tokenizer(
     prompt: Optional[str] = None,
     max_length: Optional[int] = None,
 ) -> Callable[[str], BatchEncoding]:
-    """Get a callable function that tokenizes text with a specified tokenizer.
+    """Wrap a HF tokenizer: optional chat prompt, pad/truncate to max_length, return pt tensors.
+
+    Get a callable function that tokenizes text with a specified tokenizer.
 
     Parameters
     ----------
@@ -794,6 +878,7 @@ def get_tokenizer(
             tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
     def forward(text: str) -> BatchEncoding:
+        """Tokenize one string (or list of strings) padded to max_length."""
         # If a prompt is specified assume we are dealing with generative LLM model
         if prompt is not None:
             messages = [

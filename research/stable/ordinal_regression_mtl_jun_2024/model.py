@@ -1,3 +1,10 @@
+"""DAM 2 models (stage: model): audio + transcript text classifiers.
+
+Same head and CORAL tasks as DAM 1, fed the concatenation of several backbones
+(Whisper on log-mel from the dataset, BERT or LLaMA on transcript tokens).
+Cached DAM 2 embeddings are the teacher for DAM 3 (ordinal_regression_mtl_aug_2024).
+"""
+
 import itertools
 from typing import Any, Mapping, Optional
 
@@ -18,6 +25,10 @@ from kirad.launcher_utils import TrainingParams
 
 
 def create_task_modules_from_params(tasks):
+    """One OrdinalRegressionPLModule per (task, config); cutoffs from kirad/constants.py.
+
+    Hardcoded: indet_budgets default (0.0, 0.4).
+    """
     task_modules = {
         task: OrdinalRegressionPLModule(
             num_classes=task_config["num_classes"],
@@ -27,6 +38,7 @@ def create_task_modules_from_params(tasks):
             metric_target_cutoffs=METRIC_TARGET_CUTOFFS[task],
             loss_name=f"loss_{task_config['ordinal_loss_target_type']}",
             score_table_name=f"scores-{task}",
+            # HARDCODED: default indeterminate budgets 0% and 40%
             indet_budgets=task_config.get("indet_budgets", (0.0, 0.4)),
             score_variance_loss_weight=task_config.get(
                 "score_variance_loss_weight", 0.0
@@ -40,6 +52,10 @@ def create_task_modules_from_params(tasks):
 
 
 class DepAnxClassifierBase(MultiTaskOrdinalRegressionPLModule):
+    """Concatenate embeddings of several backbones (ModuleDict order) and feed a MultitaskHead.
+
+    Head input dim = sum of backbone_dim (e.g. Whisper 768 + BERT 768 = 1536).
+    """
     def __init__(
         self,
         backbone: nn.ModuleDict,
@@ -47,6 +63,7 @@ class DepAnxClassifierBase(MultiTaskOrdinalRegressionPLModule):
         training_params: Optional[TrainingParams] = None,
         cached_backbone: bool = False,
     ):
+        """Build per-task modules and a MultitaskHead over the summed backbone dims."""
         task_modules = create_task_modules_from_params(training_params.tasks.items())
         super().__init__(task_modules)
 
@@ -60,10 +77,16 @@ class DepAnxClassifierBase(MultiTaskOrdinalRegressionPLModule):
         self.cached_backbone = cached_backbone
 
     def forward(self, x, lengths):
+        """Backbones then MultitaskHead -> ({task: [ΣW, 1] scores}, lengths)."""
         backbone_output, lengths = self.forward_backbone(x, lengths)
         return self.head(backbone_output), lengths
 
     def forward_backbone(self, x, lengths):
+        """Run each backbone on the batch and concatenate on dim 1 -> [ΣW, ΣD].
+
+        Audio expects log-mel from the dataset preprocessor (no extractor here).
+        With cached_backbone, returns x["backbone_cache"].
+        """
         if self.cached_backbone:
             return x["backbone_cache"], lengths
         else:
@@ -71,11 +94,16 @@ class DepAnxClassifierBase(MultiTaskOrdinalRegressionPLModule):
             return torch.cat(outputs, dim=1), lengths
 
     def compute_features_to_cache(self, x, lengths):
+        """Concatenated embeddings split per recording (tuple of [W_i, ΣD]) for `cache`."""
         x, lengths = self.forward_backbone(x, lengths)
         x = torch.split(x, lengths.tolist(), dim=0)
         return x
 
     def configure_optimizers(self):
+        """AdamW with two groups (backbone, head + CORAL biases) and MultiStepLR.
+
+        lr / weight_decay from training_params.optimizer["backbone"] and ["classifier"].
+        """
         if self.training_params is None:
             return None
         optimizer = torch.optim.AdamW(
@@ -108,7 +136,9 @@ class DepAnxClassifierBase(MultiTaskOrdinalRegressionPLModule):
 
 
 class DepAnxClassifierWhisperBERT(DepAnxClassifierBase):
-    """A Whisper backbone -> mean pool -> full-connected layer.
+    """DAM 2: Whisper audio + BERT transcript embeddings (768 + 768) -> multitask head.
+
+    A Whisper backbone -> mean pool -> full-connected layer.
     The whole network is trained end-to-end. Note that the whisper backbone
     is loaded from HuggingFace every time this module is called. Loading the
     backbone from `kipy` repeatedly ran into a bug, but this is tech debt.
@@ -120,6 +150,7 @@ class DepAnxClassifierWhisperBERT(DepAnxClassifierBase):
         bert_config: Mapping[str, Any],
         **kwargs,
     ):
+        """Backbones {"audio": WhisperBackbone, "text": BERTBackbone}; order sets the concat order."""
         # ordering in dict is preserved when concatenating
         # the backbone embeddings
         backbone = nn.ModuleDict(
@@ -132,12 +163,14 @@ class DepAnxClassifierWhisperBERT(DepAnxClassifierBase):
 
 
 class DepAnxClassifierWhisperLLAMA(DepAnxClassifierBase):
+    """Whisper audio + LLaMA transcript embeddings concatenated -> multitask head."""
     def __init__(
         self,
         whisper_config: Mapping[str, Any],
         llama_config: Mapping[str, Any],
         **kwargs,
     ):
+        """Backbones {"audio": WhisperBackbone, "text": LLAMABackbone}; order sets the concat order."""
         # ordering in dict is preserved when concatenating
         # the backbone embeddings
         backbone = nn.ModuleDict(
@@ -150,7 +183,9 @@ class DepAnxClassifierWhisperLLAMA(DepAnxClassifierBase):
 
 
 class DepAnxClassifierLLAMA(DepAnxClassifierBase):
+    """Text only: LLaMA transcript embedding -> multitask head."""
     def __init__(self, llama_config: Mapping[str, Any], **kwargs):
+        """Single backbone {"text": LLAMABackbone}."""
         backbone = nn.ModuleDict(
             {
                 "text": LLAMABackbone(**llama_config),

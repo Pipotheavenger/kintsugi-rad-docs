@@ -1,3 +1,9 @@
+"""Tune ordinal thresholds that turn continuous scores into severity classes.
+
+Stage: thresholds/metrics. After each validation epoch base_models tunes six threshold
+sets (accuracy, absolute_error, macro_recall, macro_precision, macro_f1 by DP; coral from
+the CORAL biases), stores them as buffers in the checkpoint and reuses them on test.
+"""
 from abc import ABC, abstractmethod
 from typing import Literal, Optional, Sequence
 
@@ -7,10 +13,15 @@ from kirad.losses import CORALLoss
 
 
 class OrdinalThresholding(torch.nn.Module):
-    """Basic 1d thresholding logic."""
+    """Base module: K-1 sorted thresholds (buffer) that map scores to K ordinal classes.
+
+    Basic 1d thresholding logic.
+    """
 
     def __init__(self, num_classes: int):
-        """Init thresholding module with the specified number of classes (one more than the number of thresholds)."""
+        """Create num_classes - 1 zero thresholds as a buffer (saved in the checkpoint).
+
+        Init thresholding module with the specified number of classes (one more than the number of thresholds)."""
         super().__init__()
         self.num_classes = num_classes
         self.register_buffer("thresholds", torch.zeros(num_classes - 1))
@@ -21,7 +32,11 @@ class OrdinalThresholding(torch.nn.Module):
         return all(torch.greater_equal(self.thresholds[1:], self.thresholds[:-1]))
 
     def forward(self, scores) -> torch.Tensor:
-        """Find which thresholds each score lies between."""
+        """Class index per score = number of thresholds strictly below it (searchsorted).
+
+        Find which thresholds each score lies between.
+        Note: a score equal to a threshold falls in the lower class.
+        """
         return torch.searchsorted(self.thresholds, scores)
 
     def tune_thresholds(
@@ -31,7 +46,9 @@ class OrdinalThresholding(torch.nn.Module):
         labels: torch.Tensor,
         available_thresholds: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        """Adapt the thresholds to the given data.
+        """Tune thresholds on validation scores/labels; no-op here, overridden by subclasses.
+
+        Adapt the thresholds to the given data.
 
         This is essentially an abstract method, but for testing purposes it's helpful to be able to instantiate the
         class with a no-op version.
@@ -51,10 +68,16 @@ class OrdinalThresholding(torch.nn.Module):
 
 
 class CORALThresholding(OrdinalThresholding):
-    """Thresholding using the biases learned on the TRAINING set from the CORAL loss."""
+    """Thresholds = -CORAL bias at the chosen cutoff indices (learned on train, no tuning).
+
+    Thresholding using the biases learned on the TRAINING set from the CORAL loss.
+    """
 
     def __init__(self, coral_loss: CORALLoss, threshold_indices: Sequence[int]):
-        """Init module taking thresholds at specified indices from a given CORALLoss instance"""
+        """Keep a reference to the CORAL biases and the cutoff indices to read.
+
+        Init module taking thresholds at specified indices from a given CORALLoss instance
+        """
         super().__init__(len(threshold_indices) + 1)
         self.biases = coral_loss.biases
         self.threshold_indices = torch.tensor(threshold_indices)
@@ -66,14 +89,19 @@ class CORALThresholding(OrdinalThresholding):
         labels: torch.Tensor,
         available_thresholds: Optional[torch.Tensor] = None,
     ):
-        """Ignore the data, pull the specified biases from the CORAL loss, and multiply by -1 to get thresholds."""
+        """Copy -biases[threshold_indices] from the CORAL loss; scores and labels are ignored.
+
+        Ignore the data, pull the specified biases from the CORAL loss, and multiply by -1 to get thresholds.
+        """
         self.thresholds[:] = -torch.gather(
             self.biases, 0, self.threshold_indices.to(self.biases.device)
         )
 
 
 class OptimalOrdinalThresholdingViaDynamicProgramming(OrdinalThresholding, ABC):
-    """Super-class for general dynamic programming implementations of ordinal threshold tuning.
+    """Base for DP threshold tuning: pick K-1 thresholds from candidates to optimize a metric.
+
+    Super-class for general dynamic programming implementations of ordinal threshold tuning.
 
     Subclasses implement different ways of computing the mean cost and corresponding DP step.
 
@@ -82,6 +110,7 @@ class OptimalOrdinalThresholdingViaDynamicProgramming(OrdinalThresholding, ABC):
     direction: Literal["min", "max"]  # provided by subclasses
 
     def __init__(self, num_classes: int):
+        """Check that the subclass set `direction` to "min" or "max"."""
         super().__init__(num_classes=num_classes)
         if self.direction not in ("min", "max"):
             raise ValueError(
@@ -95,7 +124,10 @@ class OptimalOrdinalThresholdingViaDynamicProgramming(OrdinalThresholding, ABC):
         """Compute the mean cost of assigning label(s) `preds` when the ground truth is `labels`."""
 
     def best_constant_output_classifier(self, labels: torch.Tensor):
-        """Find the optimal mean cost of a constant-output classifier for given `labels` and the associated constant."""
+        """Best metric of a constant-class predictor and that class (baseline_const_* in logs).
+
+        Find the optimal mean cost of a constant-output classifier for given `labels` and the associated constant.
+        """
         if self.direction == "min":
             optimize = torch.min
         else:
@@ -122,7 +154,9 @@ class OptimalOrdinalThresholdingViaDynamicProgramming(OrdinalThresholding, ABC):
         available_thresholds: torch.Tensor,
         prev_cost: Optional[torch.Tensor] = None,
     ) -> (torch.Tensor, Optional[torch.Tensor]):
-        """Given optimal cost `prev_cost` of classes < `c_idx`, optimize cost of `c_idx` as a function of threshold.
+        """One DP step: best cost of classes <= c_idx for each candidate upper threshold of c_idx.
+
+        Given optimal cost `prev_cost` of classes < `c_idx`, optimize cost of `c_idx` as a function of threshold.
 
         Arguments
         ---------
@@ -147,7 +181,9 @@ class OptimalOrdinalThresholdingViaDynamicProgramming(OrdinalThresholding, ABC):
         labels: torch.Tensor,
         available_thresholds: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        """Set `self.thresholds` to optimize mean cost of given `scores` and `labels`.
+        """Set thresholds by DP over midpoints of unique scores (+/-inf); return the best metric.
+
+        Set `self.thresholds` to optimize mean cost of given `scores` and `labels`.
 
         Arguments
         ---------
@@ -221,17 +257,23 @@ class OptimalOrdinalThresholdingViaDynamicProgramming(OrdinalThresholding, ABC):
 
 
 def cumsum_with_0(t: torch.Tensor):
+    """Cumulative sum along dim 0 with a leading 0 (length n + 1)."""
     return torch.nn.functional.pad(torch.cumsum(t, dim=0), (1, 0))
 
 
 class OptimalCostPerSampleOrdinalThresholding(
     OptimalOrdinalThresholdingViaDynamicProgramming, ABC
 ):
-    """Optimal 1d thresholding based on tuning thresholds to optimize the mean of a sample-wise cost function."""
+    """DP tuning for metrics that are a mean of per-sample costs (accuracy, MAE, macro recall).
+
+    Optimal 1d thresholding based on tuning thresholds to optimize the mean of a sample-wise cost function.
+    """
 
     @abstractmethod
     def cost(self, *, labels: torch.Tensor, preds: int | torch.Tensor):
-        """Compute the sample-wise cost of assigning label(s) `preds` when the ground truth is `labels`."""
+        """Per-sample cost of predicting `preds` for `labels` (subclasses define the metric).
+
+        Compute the sample-wise cost of assigning label(s) `preds` when the ground truth is `labels`."""
 
     def mean_cost(
         self, *, labels: torch.Tensor, preds: int | torch.Tensor
@@ -248,7 +290,11 @@ class OptimalCostPerSampleOrdinalThresholding(
         available_thresholds: torch.Tensor,
         prev_cost: Optional[torch.Tensor] = None,
     ) -> (torch.Tensor, Optional[torch.Tensor]):
-        """O(len(scores)) implementation for per-sample cost."""
+        """O(n) DP step: histogram per-sample costs over candidates, cumsum, running max.
+
+        O(len(scores)) implementation for per-sample cost.
+        Note: torch.histogram runs on CPU (no CUDA kernel); tensors are moved back and forth.
+        """
         # Compute running_cost[i] = sum of costs of elements with score less than available_thresholds[i] if assigned label c
         item_costs = self.cost(labels=labels, preds=c_idx) / len(scores)
         if self.direction == "min":
@@ -279,6 +325,7 @@ class MaxAccuracyOrdinalThresholding(OptimalCostPerSampleOrdinalThresholding):
     direction = "max"
 
     def cost(self, *, labels: torch.Tensor, preds: int | torch.Tensor):
+        """1.0 where pred == label, else 0.0."""
         return torch.eq(labels, preds).float()
 
 
@@ -288,6 +335,7 @@ class MaxMacroRecallOrdinalThresholding(OptimalCostPerSampleOrdinalThresholding)
     direction = "max"
 
     def cost(self, *, labels: torch.Tensor, preds: int | torch.Tensor):
+        """Correct = N / (K * count[label]), so the mean equals macro-averaged recall."""
         counts = torch.bincount(labels, minlength=self.num_classes).float()
         ratios = counts.sum() / (self.num_classes * counts)
         return torch.eq(labels, preds).float() * torch.gather(
@@ -301,13 +349,16 @@ class MinAbsoluteErrorOrdinalThresholding(OptimalCostPerSampleOrdinalThresholdin
     direction = "min"
 
     def cost(self, *, labels: torch.Tensor, preds: int | torch.Tensor):
+        """|pred - label| in class units."""
         return torch.abs(preds - labels).float()
 
 
 class ClassWeightedOptimalCostPerSampleOrdinalThresholding(
     OptimalCostPerSampleOrdinalThresholding
 ):
-    """Compute cost weighted equally over classes instead of equally over samples.
+    """Wrap a per-sample cost so each class weighs equally; not used by base_models.
+
+    Compute cost weighted equally over classes instead of equally over samples.
 
     This class takes another instance of OptimalCostPerSampleOrdinalThresholding
     which computes its cost independently for each sample and reweights the cost
@@ -320,11 +371,13 @@ class ClassWeightedOptimalCostPerSampleOrdinalThresholding(
     """
 
     def __init__(self, unweighted_instance: OptimalCostPerSampleOrdinalThresholding):
+        """Copy direction and num_classes from the wrapped instance."""
         self.direction = unweighted_instance.direction
         super().__init__(unweighted_instance.num_classes)
         self.unweighted_instance = unweighted_instance
 
     def cost(self, *, labels: torch.Tensor, preds: int | torch.Tensor):
+        """Wrapped cost times N / (K * count[label]); raises if any class is missing."""
         counts = torch.bincount(labels, minlength=self.num_classes)
         (indices,) = torch.where(counts == 0)
         if len(indices) > 0:
@@ -339,7 +392,9 @@ class ClassWeightedOptimalCostPerSampleOrdinalThresholding(
 class OptimalCostPerClassOrdinalThresholding(
     OptimalOrdinalThresholdingViaDynamicProgramming, ABC
 ):
-    """General DP case for when the linear algorithm for per-sample costs is not applicable.
+    """DP tuning for per-class metrics (macro precision, macro F1) via a T x T cost matrix.
+
+    General DP case for when the linear algorithm for per-sample costs is not applicable.
 
     Complexity depends on the implementation of `cost_matrix`.
 
@@ -356,12 +411,17 @@ class OptimalCostPerClassOrdinalThresholding(
         start: bool,
         end: bool,
     ) -> torch.Tensor:
-        """Each output[i, j] = cost for when scores in range `available_thresholds[i:j]` are assigned label `c_idx`."""
+        """Cost matrix [T, T]: metric of class c_idx if scores in [thr[i], thr[j]) get c_idx.
+
+        Each output[i, j] = cost for when scores in range `available_thresholds[i:j]` are assigned label `c_idx`."""
 
     def mean_cost(
         self, *, labels: torch.Tensor, preds: int | torch.Tensor
     ) -> torch.Tensor:
-        """Compute the mean cost of assigning label(s) `preds` when the ground truth is `labels`."""
+        """Macro metric of fixed `preds`, reusing cost_matrix with thresholds c +/- 0.5.
+
+        Compute the mean cost of assigning label(s) `preds` when the ground truth is `labels`.
+        """
 
         if isinstance(preds, int) or preds.numel() == 1:
             preds = preds * torch.ones_like(labels, dtype=torch.int)
@@ -383,6 +443,10 @@ class OptimalCostPerClassOrdinalThresholding(
         available_thresholds: torch.Tensor,
         prev_cost: Optional[torch.Tensor] = None,
     ) -> (torch.Tensor, Optional[torch.Tensor]):
+        """O(T^2) DP step: add prev_cost to each lower-threshold row and max over it.
+
+        T = number of candidate thresholds. Cost is divided by K, giving a macro average.
+        """
         cost_matrix = (
             self.cost_matrix(
                 c_idx,
@@ -409,7 +473,9 @@ def _compute_metrics_matrices(
     start: bool = False,
     end: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Each output[i, j] = stats for when scores between thresholds[i] and thresolds[j] are assigned `True`.
+    """TP and predicted-positive counts for every [thresholds[i], thresholds[j]) range.
+
+    Each output[i, j] = stats for when scores between thresholds[i] and thresolds[j] are assigned `True`.
 
     Helper function for `MaxMacroPrecisionOrdinalThresholding` and `MaxMacroF1OrdinalThresholding`
 
@@ -450,9 +516,11 @@ def _compute_metrics_matrices(
     )
 
     def start_slice(t):
+        """Lower-threshold axis as rows (only row 0 when `start`)."""
         return t[: (1 if start else None), None]
 
     def end_slice(t):
+        """Upper-threshold axis as columns (only the last column when `end`)."""
         return t[None, (-1 if end else None) :]
 
     tp = end_slice(running_labeled_true_by_thresh) - start_slice(
@@ -478,6 +546,7 @@ class MaxMacroPrecisionOrdinalThresholding(OptimalCostPerClassOrdinalThresholdin
         start: bool,
         end: bool,
     ) -> torch.Tensor:
+        """Precision of class c_idx for each (lower, upper) threshold pair; empty range = 0."""
         tp, tp_plus_fp = _compute_metrics_matrices(
             scores, torch.eq(labels, c_idx), available_thresholds, start=start, end=end
         )
@@ -501,6 +570,7 @@ class MaxMacroF1OrdinalThresholding(OptimalCostPerClassOrdinalThresholding):
         start: bool,
         end: bool,
     ) -> torch.Tensor:
+        """F1 of class c_idx = 2TP / (TP+FP + TP+FN) for each (lower, upper) threshold pair."""
         tp, tp_plus_fp = _compute_metrics_matrices(
             scores, torch.eq(labels, c_idx), available_thresholds, start=start, end=end
         )

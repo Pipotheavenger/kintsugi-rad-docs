@@ -1,4 +1,11 @@
-"""Contains various metrics used by researchers."""
+"""Binary Sn/Sp metrics with an indeterminate band, plus a DDP-safe score accumulator.
+
+Stage: thresholds/metrics. base_models gathers val/test scores with MultiCatMetric,
+builds an IndetSnSpArray per binary cut, and reports AUROC and sn_eq_sp at each
+indeterminate budget (default 0% and 40%).
+
+Contains various metrics used by researchers.
+"""
 from dataclasses import asdict, dataclass, fields
 from typing import Any, Optional
 
@@ -12,6 +19,7 @@ from typing_extensions import Self  # in typing in python3.11
 
 
 def pad_cat(tensors):
+    """Zero-pad non-batch dims to the largest shape, then concat on dim 0 (DDP reduce)."""
     shapes = [torch.tensor(t.shape[1:]) for t in tensors]
     padded_shape = torch.stack(shapes, dim=0).max(dim=0).values
     padded_tensors = [
@@ -29,7 +37,11 @@ def pad_cat(tensors):
 
 
 class MultiCatMetric(Metric):
-    """Container metric to concatenate parallel lists of tensors, e.g. corresponding scores and labels."""
+    """Accumulate parallel tensors over batches and ranks (uuids, scores, variances, labels).
+
+    Container metric to concatenate parallel lists of tensors, e.g. corresponding scores and labels.
+    Note: base_models uses MultiCatMetric(4); uuids are uint8 tensors, padded by pad_cat.
+    """
 
     is_differentiable = None
     higher_is_better = None
@@ -40,7 +52,9 @@ class MultiCatMetric(Metric):
         num_states: int = 1,
         **kwargs: Any,
     ) -> None:
-        """Create a container metric to concatenate parallel lists of tensors, e.g. corresponding scores and labels.
+        """Register `num_states` list states, reduced across ranks with pad_cat.
+
+        Create a container metric to concatenate parallel lists of tensors, e.g. corresponding scores and labels.
 
         Arguments
         ---------
@@ -56,7 +70,9 @@ class MultiCatMetric(Metric):
             self.add_state(state_name, default=[], dist_reduce_fx=pad_cat)
 
     def update(self, *values: Tensor) -> None:
-        """Update state with data.
+        """Append one batch of `num_states` tensors.
+
+        Update state with data.
 
         Args:
             values: tuple `num_states` tensors to accumulate over batches. For fixed `i`, `values[i]` must have the
@@ -72,7 +88,7 @@ class MultiCatMetric(Metric):
             getattr(self, state_name).append(value)
 
     def compute(self) -> tuple[Tensor, ...]:
-        """Concatenate each of the `num_states` tensors over all calls to `update`
+        """Concatenate each of the `num_states` tensors over all calls to `update`.
 
         Returns
         -------
@@ -97,7 +113,9 @@ def running_argmax_indices(a):
 
 
 def pareto_2d_indices(x, y):
-    """Compute indices of the Pareto frontier maximizing x and y, sorted in increasing x and decreasing y.
+    """Indices of the 2-d Pareto frontier maximizing x and y.
+
+    Compute indices of the Pareto frontier maximizing x and y, sorted in increasing x and decreasing y.
 
     e.g. the Pareto frontier of the point set below is [A, G]
 
@@ -125,7 +143,9 @@ def midpoints_with_infs(x):
 
 @dataclass
 class IndetSnSpArray:
-    """An array of metrics at different lower and upper threshold values.
+    """Sn, Sp and indeterminate fraction for many (lower, upper) threshold pairs.
+
+    An array of metrics at different lower and upper threshold values.
 
     Each member `lower_thresh`, `upper_thresh`, `sn`, `sp`, and `indet_frac` must be a numpy array, and they all must
     have the same shape. Corresponding entries of these arrays specify a pair of thresholds and the metrics when a
@@ -143,6 +163,7 @@ class IndetSnSpArray:
 
     @property
     def min_sn_sp(self):
+        """min(Sn, Sp) per threshold pair; the quantity maximized for sn_eq_sp."""
         return np.minimum(self.sn, self.sp)
 
     @classmethod
@@ -156,7 +177,9 @@ class IndetSnSpArray:
         weights: Optional[np.ndarray] = None,
         eps: float = 1e-8,
     ) -> Self:
-        """Find `IndetSnSpArray` values for given truth and scores as thresholds vary (à la sklearn.metrics.roc_curve).
+        """Sn/Sp/indet_frac for all threshold pairs (or the given ones) via histogram cumsums.
+
+        Find `IndetSnSpArray` values for given truth and scores as thresholds vary (à la sklearn.metrics.roc_curve).
 
         The output object contains arrays for `sn`, `sp`, `indet_frac`, `lower_thresh`, and `upper_thresh`, all with the
         same shape. What these arrays contain and what their common shape is depends on the input as follows.
@@ -231,7 +254,7 @@ class IndetSnSpArray:
         y_score,
         weights: Optional[np.ndarray] = None,
     ) -> "IndetSnSpArray":
-        """Evaluate the given data on the thresholds of `self`."""
+        """Evaluate the given data on the thresholds of `self` (e.g. val thresholds on test)."""
         return IndetSnSpArray.build(
             lower_thresh=self.lower_thresh,
             upper_thresh=self.upper_thresh,
@@ -251,7 +274,9 @@ class IndetSnSpArray:
         )
 
     def roc_curve(self, indet_budget=0.0) -> "IndetRocCurve":
-        """Compute ROC curve with indeterminate budget, sorted by increasing sn and decreasing sp.
+        """Pareto ROC curve of (Sn, Sp) using only pairs with indet_frac <= indet_budget.
+
+        Compute ROC curve with indeterminate budget, sorted by increasing sn and decreasing sp.
 
         Restrict `self` to Pareto-optimal pairs (sn, sp) for which `indet_frac <= indet_budget`. Other points are worse
         than the points on the curve in the sense of having worse Sn, worse Sp, or not meeting the indeterminate budget.
@@ -262,7 +287,9 @@ class IndetSnSpArray:
         return IndetRocCurve(**asdict(within_budget[frontier]))
 
     def sn_eq_sp_graph(self) -> "IndetSnEqSpGraph":
-        """Compute sn=sp as a function of indet_frac, returning both sorted in increasing order.
+        """Best min(Sn, Sp) per indeterminate fraction; these thresholds are saved in the ckpt.
+
+        Compute sn=sp as a function of indet_frac, returning both sorted in increasing order.
 
         Method: restrict to Pareto-optimal pairs (s, indet_frac) where s = min(sn, sp).
 
@@ -277,9 +304,12 @@ class IndetSnSpArray:
 
 
 class IndetSnSpTensorModule(torch.nn.Module):
-    """A torch container for the contents of an `IndetSnSpArray` to be saved along with a model's `state_dict`."""
+    """Buffers holding an IndetSnSpArray (val sn_eq_sp thresholds) in the checkpoint.
+
+    A torch container for the contents of an `IndetSnSpArray` to be saved along with a model's `state_dict`."""
 
     def __init__(self):
+        """One empty buffer per IndetSnSpArray field."""
         super().__init__()
         for field in fields(IndetSnSpArray):
             self.register_buffer(field.name, torch.tensor(()))
@@ -297,14 +327,16 @@ class IndetSnSpTensorModule(torch.nn.Module):
 
 
 class IndetRocCurve(IndetSnSpArray):
-    """Sn, Sp achievable within some indeterminate budget and associated lower and upper thresholds.
+    """ROC curve (Pareto Sn/Sp points) within an indeterminate budget, with thresholds.
+
+    Sn, Sp achievable within some indeterminate budget and associated lower and upper thresholds.
 
     `sn` is assumed to be sorted in increasing order and `sp` decreasing.
 
     """
 
     def sn_eq_sp(self) -> IndetSnSpArray:
-        """Locate the point on the ROC curve closest to the diagonal"""
+        """Locate the point on the ROC curve closest to the diagonal (max min(Sn, Sp))."""
         return self[np.argmax(self.min_sn_sp)]
 
     def auc(self) -> float:
@@ -322,7 +354,9 @@ class IndetRocCurve(IndetSnSpArray):
         y_score: np.ndarray,
         weights: Optional[np.ndarray] = None,
     ) -> Self:
-        """Build an indeterminate=0 ROC curve in n log n time (vs n**2 for IndetSnSpArray.build().roc_curve())."""
+        """Plain ROC curve (no indeterminate band) in O(n log n).
+
+        Build an indeterminate=0 ROC curve in n log n time (vs n**2 for IndetSnSpArray.build().roc_curve())."""
         if thresh is None:
             thresh = midpoints_with_infs(y_score)[
                 ::-1
@@ -338,7 +372,9 @@ class IndetRocCurve(IndetSnSpArray):
 
 
 class IndetSnEqSpGraph(IndetSnSpArray):
-    """Sn=Sp achievable as a function of indeterminate budget and associated lower and upper thresholds.
+    """Best Sn=Sp for each indeterminate budget, with its lower/upper thresholds.
+
+    Sn=Sp achievable as a function of indeterminate budget and associated lower and upper thresholds.
 
     Both min(self.sn, self.sp) and self.indet_frac are assumed to be sorted in non-decreasing order.
 
@@ -352,7 +388,10 @@ class IndetSnEqSpGraph(IndetSnSpArray):
 def binary_indet_confusion_matrix(
     scores: np.ndarray, y_true: np.ndarray, thresh_low: float, thresh_high: float
 ) -> np.ndarray:
-    """Compute flattened confusion matrix for binary ground truth, with indeterminate score range.
+    """Flat 2x3 confusion matrix (neg/pos truth x neg/pos/indet output) for one threshold pair.
+
+    Compute flattened confusion matrix for binary ground truth, with indeterminate score range.
+    Note: not called inside kirad; standalone analysis helper.
 
     Parameters
     ----------
@@ -381,7 +420,9 @@ def binary_indet_confusion_matrix(
 
 
 def bootstrap_confusion_matrix(cm: np.ndarray, num_bootstrap: int) -> np.ndarray:
-    """Resample from flat confusion matrix with replacement `num_bootstrap` times.
+    """Multinomial bootstrap of a flat confusion matrix; returns len(cm) x num_bootstrap.
+
+    Resample from flat confusion matrix with replacement `num_bootstrap` times.
 
     Parameters
     ----------

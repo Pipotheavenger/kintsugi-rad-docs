@@ -1,3 +1,8 @@
+"""Data stage (optional): RawBoost waveform augmentation, applied in KintsugiAudioDataset.
+
+Enabled per config via augmentations: [{class_name, params, aug_prob}]; runs on CPU numpy.
+"""
+
 import copy
 
 import numpy as np
@@ -10,6 +15,7 @@ from scipy import signal
 # https://github.com/TakHemlata/RawBoost-antispoofing
 ###############################################################
 def randRange(x1, x2, integer):
+    """Uniform random value in [x1, x2), cast to int if `integer`."""
     y = np.random.uniform(low=x1, high=x2, size=(1,))
     if integer:
         y = int(y)
@@ -17,6 +23,7 @@ def randRange(x1, x2, integer):
 
 
 def normWav(x, always):
+    """Peak-normalize to [-1, 1] always, or only when the peak exceeds 1."""
     if always:
         x = x / np.amax(abs(x))
     elif np.amax(abs(x)) > 1:
@@ -27,6 +34,7 @@ def normWav(x, always):
 def genNotchCoeffs(
     nBands, minF, maxF, minBW, maxBW, minCoeff, maxCoeff, minG, maxG, fs
 ):
+    """Random FIR filter: cascade of nBands random notch (band-stop) filters, random gain."""
     b = 1
     for i in range(0, nBands):
         fc = randRange(minF, maxF, 0)
@@ -52,6 +60,7 @@ def genNotchCoeffs(
 
 
 def filterFIR(x, b):
+    """Apply FIR filter b to x, compensating the filter delay (same output length)."""
     N = b.shape[0] + 1
     xpad = np.pad(x, (0, N), "constant")
     y = signal.lfilter(b, 1, xpad)
@@ -76,6 +85,7 @@ def LnL_convolutive_noise(
     maxBiasLinNonLin,
     fs,
 ):
+    """LnL: sum of random FIR-filtered powers x, x^2, ..., x^N_f (channel distortion)."""
     y = [0] * x.shape[0]
     for i in range(0, N_f):
         if i == 1:
@@ -92,6 +102,7 @@ def LnL_convolutive_noise(
 
 # Impulsive signal dependent noise
 def ISD_additive_noise(x, P, g_sd):
+    """ISD: perturb up to P% of random samples by signal-proportional impulsive noise."""
     beta = randRange(0, P, 0)
 
     y = copy.deepcopy(x)
@@ -123,6 +134,7 @@ def SSI_additive_noise(
     maxG,
     fs,
 ):
+    """SSI: add coloured Gaussian noise at a random SNR in [SNRmin, SNRmax] dB."""
     noise = np.random.normal(0, 1, x.shape[0])
     b = genNotchCoeffs(
         nBands, minF, maxF, minBW, maxBW, minCoeff, maxCoeff, minG, maxG, fs
@@ -138,7 +150,8 @@ def SSI_additive_noise(
 
 
 class RawBoost:
-    """
+    """RawBoost waveform augmentation (LnL/ISD/SSI noise); default algo 4 = all three.
+
     Plug-and-play RawBoost augmentation (official defaults)
     The following are plug-and-play algorithm presets from the official paper:
     https://arxiv.org/abs/2111.04433
@@ -160,7 +173,7 @@ class RawBoost:
     def __init__(
         self,
         algo=4,
-        fs=16000,
+        fs=16000,  # HARDCODED: assumes 16 kHz audio; maxF=8000 is its Nyquist
         nBands=5,
         minF=20,
         maxF=8000,
@@ -178,6 +191,7 @@ class RawBoost:
         SNRmin=10,
         SNRmax=40,
     ):
+        """Store RawBoost parameters (paper defaults); raises if algo > 8."""
 
         if algo > 8:
             raise ValueError(f"Invalid algo: {algo}")
@@ -205,6 +219,10 @@ class RawBoost:
         self.SNRmax = SNRmax
 
     def __call__(self, x: torch.tensor):
+        """Augment one waveform [T]; returns a tensor with the input dtype and device.
+
+        Note: calls x.numpy(), so x must be a CPU tensor.
+        """
 
         orig_dtype, orig_device = x.dtype, x.device
         x = x.numpy()

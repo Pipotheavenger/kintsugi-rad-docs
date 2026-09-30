@@ -1,15 +1,23 @@
+"""Global constants: sample rate, score ranges, label cutoffs, batch field names.
+
+Stage: utils (used by data, model, loss and metrics). Cutoffs and MAX_SCORE define
+the ordinal tasks; change them if a new questionnaire or threshold is used.
+"""
+
 from pathlib import Path
 from typing import Literal
 
 import numpy as np
 import torch
 
+# HARDCODED: audio must already be 16 kHz; files are not resampled.
 EXPECTED_SAMPLE_RATE = 16000
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CPU_DEVICE = torch.device("cpu")
 MAX_FINITE_FLOAT32 = float(np.finfo(np.float32).max)
 
 # Defines VAD parameters for different types of audio
+# HARDCODED: VAD silence/speech minimums (ms); VAD itself runs upstream, not in this repo.
 DEFAULT_VAD_MIN_SILENCE_DURATION_MS = 100
 DEFAULT_VAD_MIN_SPEECH_DURATION_MS = 250
 VAD_PARAMS = {
@@ -23,10 +31,13 @@ VAD_PARAMS = {
 
 # Define maximum scores for depression (PHQ-9, PHQ-2, and SCID) and anxiety (GAD-7 and
 # GAD-2).
+# HARDCODED: questionnaire maxima; set the ordinal range of each task.
 MAX_SCORE = {"phq9": 27, "phq2": 6, "scid": 1, "gad7": 21, "gad2": 6}
 
 # PHQ-9 (low/medium cutoff, medium/high cutoff) = (9, 14)
+# HARDCODED: binary cuts for metrics/thresholds; label counts cutoffs exceeded (strict >).
 METRIC_TARGET_CUTOFFS = {"depression": (9, 14), "anxiety": (4, 9, 14), "real": (0,)}
+# HARDCODED: CORAL target sets per task; exact28/exact22 use every score boundary.
 LOSS_TARGET_CUTOFFS = {
     "real": {
         "exact2": (0,),
@@ -123,11 +134,13 @@ DATASET_VERSION_METADATA = {
     "v2.11.1": {"n_folds": 5, "uri": None},
     "v2.11.4": {"n_folds": 5, "uri": None},
 }
+# HARDCODED: Kintsugi remote storage URIs, blanked to None in this copy.
 FEATURE_STORE_URI = None
 RAW_AUDIO_URI = None
 
 
 # Defines where audio and metadata is cached
+# HARDCODED: local cache under ~/.kintsugi and ~/.cache/kintsugi.
 CACHE_DIR = Path.home() / ".kintsugi"
 AUDIO_DIR = CACHE_DIR / "audio"
 METADATA_DIR = CACHE_DIR / "metadata"
@@ -135,6 +148,8 @@ USER_CACHE_DIR_KINTSUGI = Path.home() / ".cache" / "kintsugi"
 
 
 class DatasetFields:
+    """Key names of a batch dict: uuid, features, label.<task>.primary/kd, length, loss."""
+
     UUID = "uuid"
     FEATURES = "features"
     LABEL = "label"
@@ -142,10 +157,14 @@ class DatasetFields:
     LOSS = "loss"
 
     class LabelFields:
+        """Sub-keys under label.<task>: primary (label column) and kd (scores_<task> column)."""
+
         PRIMARY = "primary"
         KD = "kd"
 
 
+# HARDCODED: fixed 80-bin log-mel mean profile; WhisperTorchFeatureExtractor shifts each
+# window's per-bin time mean to these values (channel equalization).
 IDEAL_LOGMEL_ENERGIES = np.array(
     [
         0.34912264,

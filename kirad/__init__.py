@@ -1,3 +1,9 @@
+"""kirad: shared library for the Kintsugi depression/anxiety speech models.
+
+Stage: utils. Exposes data, model, loss, metric and plotting modules; the
+experiment-specific models live under research/.
+"""
+
 from . import (
     base_models,
     constants,

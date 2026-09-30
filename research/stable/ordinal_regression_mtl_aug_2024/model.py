@@ -1,3 +1,10 @@
+"""DAM 3 models (stage: model): audio-only model that imitates DAM 2's text branch.
+
+Phase 1, WhisperLLMA: Whisper learns (MSE) the cached BERT half of a DAM 2 embedding.
+Phase 2, DepAnxClassifier: both Whispers frozen; only MultitaskHead + CORAL biases train.
+Configs: config_llma*.yaml (phase 1) and config*.yaml / config_dam3.0.yaml (phase 2).
+"""
+
 import itertools
 from typing import Any, Mapping, Optional
 
@@ -23,7 +30,9 @@ from kirad.utils import (
 
 
 class WhisperLLMA(pl.LightningModule):
-    """Whisper-based LLM approximation model.
+    """DAM 3 phase 1: Whisper encoder trained to predict a cached text embedding from audio.
+
+    Whisper-based LLM approximation model.
     gt_dim – ground truth dimensionality, can be different for
     different models. If not specified, defaults to dimensionality of the
     approximator
@@ -36,6 +45,10 @@ class WhisperLLMA(pl.LightningModule):
         training_params: Optional[TrainingParams] = None,
         cached_backbone: bool = False,
     ):
+        """Whisper backbone "llma" plus a fixed random projection of the target if dims differ.
+
+        Note: random_projector is not in the optimizer, so it stays at its random init.
+        """
         super().__init__()
 
         self.backbone = nn.ModuleDict(
@@ -60,27 +73,36 @@ class WhisperLLMA(pl.LightningModule):
         self.cached_backbone = cached_backbone
 
     def forward(self, x, lengths):
+        """Whisper embedding averaged per recording. Shapes: log-mel [ΣW, 80, 3000] -> [B, 768]."""
         x = self.backbone["llma"](x)
         x = average_tensor_in_segments(x, lengths)
         return x
 
     def forward_ground_truth(self, x, lengths):
+        """Target: cached text embedding (x["backbone_cache"]) averaged per recording, projected."""
         x_truth = x["backbone_cache"]
         x_truth = average_tensor_in_segments(x_truth, lengths)
         x_truth = self.random_projector(x_truth)
         return x_truth
 
     def training_step(self, batch, batch_idx):
+        """Lightning train step: returns the MSE loss."""
         total_loss = self.step("train", batch, batch_idx)
         return total_loss
 
     def validation_step(self, batch, batch_idx):
+        """Lightning val step; loss is logged only."""
         self.step("val", batch, batch_idx)
 
     def test_step(self, batch, batch_idx):
+        """Lightning test step; loss is logged only."""
         self.step("test", batch, batch_idx)
 
     def step(self, split, batch, batch_idx):
+        """MSE between per-recording Whisper embedding and the cached teacher embedding.
+
+        Logged as metrics/<split>/total_loss (no thresholds or Sn/Sp in this phase).
+        """
         x = batch[DatasetFields.FEATURES]
         lengths = batch[DatasetFields.LENGTH]
 
@@ -98,6 +120,7 @@ class WhisperLLMA(pl.LightningModule):
         return total_loss
 
     def configure_optimizers(self):
+        """AdamW on the Whisper backbone only (optimizer["backbone"]) with MultiStepLR."""
         if self.training_params is None:
             return None
         optimizer = torch.optim.AdamW(
@@ -119,7 +142,9 @@ class WhisperLLMA(pl.LightningModule):
 
 
 class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
-    """A Whisper backbone -> mean pool -> full-connected layer.
+    """DAM 3: frozen Whisper + frozen WhisperLLMA embeddings (768 + 768) -> trainable head.
+
+    A Whisper backbone -> mean pool -> full-connected layer.
     The whole network is trained end-to-end. Note that the whisper backbone
     is loaded from HuggingFace every time this module is called. Loading the
     backbone from `kipy` repeatedly ran into a bug, but this is tech debt.
@@ -133,6 +158,11 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
         training_params: Optional[TrainingParams] = None,
         cached_backbone: bool = False,
     ):
+        """Build per-task modules, a Whisper audio backbone, load WhisperLLMA from W&B, head.
+
+        llma_ckpt is a W&B artifact URL; the LLMA config is read from that run's config.
+        Head input dim = 768 (audio) + 768 (LLMA).
+        """
         task_modules = {
             task: OrdinalRegressionPLModule(
                 num_classes=task_config["num_classes"],
@@ -142,6 +172,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
                 metric_target_cutoffs=METRIC_TARGET_CUTOFFS[task],
                 loss_name=f"loss_{task_config['ordinal_loss_target_type']}",
                 score_table_name=f"scores-{task}",
+                # HARDCODED: default indeterminate budgets 0% and 40%
                 indet_budgets=task_config.get("indet_budgets", (0.0, 0.4)),
                 score_variance_loss_weight=task_config.get(
                     "score_variance_loss_weight", 0.0
@@ -174,10 +205,16 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
         self.cached_backbone = cached_backbone
 
     def forward(self, x, lengths):
+        """Frozen backbones then MultitaskHead -> ({task: [B, 1] scores}, lengths of 1)."""
         backbone_output, lengths = self.forward_backbone(x, lengths)
         return self.head(backbone_output), lengths
 
     def forward_backbone(self, x, lengths):
+        """No-grad Whisper + WhisperLLMA, averaged per recording -> [B, 1536]; lengths set to 1.
+
+        Both backbones are frozen here (torch.no_grad, and not in the optimizer).
+        With cached_backbone, returns x["backbone_cache"] unchanged.
+        """
         if self.cached_backbone:
             return x["backbone_cache"], lengths
         else:
@@ -190,11 +227,13 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
             return torch.cat((audio_output, llma_output), dim=1), lengths
 
     def compute_features_to_cache(self, x, lengths):
+        """Per-recording embeddings (one [1, 1536] each) for `cache`."""
         x, lengths = self.forward_backbone(x, lengths)
         x = torch.split(x, lengths, dim=0)
         return x
 
     def configure_optimizers(self):
+        """AdamW on head + CORAL biases only (backbones frozen), with MultiStepLR."""
         if self.training_params is None:
             return None
         optimizer = torch.optim.AdamW(

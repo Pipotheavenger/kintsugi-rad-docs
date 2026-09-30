@@ -1,3 +1,9 @@
+"""Offline transcription of one WAV into the transcript JSON used by text models.
+
+Stage: data preparation (before launch). Output goes to text_root/<filename>.json,
+read by KintsugiTextDataset (DAM 2, DAM 3 phase 1). Not called by the launcher.
+"""
+
 import json
 from pathlib import Path
 from typing import Optional
@@ -15,10 +21,17 @@ def run_whisper_asr(
     start_time: Optional[float] = None,
     end_time: Optional[float] = None,
 ):
+    """Transcribe a 16 kHz WAV (optional start/end in s) with Whisper large-v3 to JSON.
+
+    Uses whisper_timestamped (word timestamps, VAD, disfluencies), English only.
+    Note: raises if the file is not 16 kHz; does not resample.
+    Hardcoded: model "large-v3", language="en", beam 5, temperature fallback.
+    """
     audio_filename = Path(audio_filename).expanduser().resolve()
     output_dir = Path(output_filename).expanduser().resolve().parent
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # HARDCODED: ASR model "large-v3"; reloaded on every call.
     model = whisper.load_model("large-v3")
 
     if start_time is None:
@@ -44,10 +57,12 @@ def run_whisper_asr(
     result = whisper.transcribe(
         model,
         audio,
+        # HARDCODED: English only; change for Congo/Colombia/Jordan/Ukraine data.
         language="en",
         task="transcribe",
         vad=True,
         detect_disfluencies=True,
+        # HARDCODED: decoding params (beam 5, best_of 5, temperature fallback).
         beam_size=5,
         best_of=5,
         temperature=(0.0, 0.2, 0.4, 0.6, 0.8, 1.0),

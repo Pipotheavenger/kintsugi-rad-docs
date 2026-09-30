@@ -11,6 +11,7 @@ file-level diagram only. `{{ hardcoded }}` lists every `# HARDCODED:` comment.
 """
 
 import ast
+import html
 import re
 from pathlib import Path
 
@@ -51,16 +52,38 @@ def _esc(text: str) -> str:
     return text.replace('"', "'").replace("<", "‹").replace(">", "›")
 
 
+def _cell(text: str) -> str:
+    """Markdown table cell: escape <placeholders> and pipes so they survive rendering."""
+    parts = re.split(r"(`[^`]*`)", text)  # leave code spans as-is
+    out = "".join(x if x.startswith("`") else html.escape(x, quote=False) for x in parts)
+    return out.replace("|", "\\|")
+
+
+def _wrap(text: str, width: int = 34) -> str:
+    """Break a description into short lines so diagram boxes stay narrow."""
+    words, lines, cur = text.split(), [], ""
+    for w in words:
+        if cur and len(cur) + 1 + len(w) > width:
+            lines.append(cur)
+            cur = w
+        else:
+            cur = f"{cur} {w}".strip()
+    if cur:
+        lines.append(cur)
+    return "<br/>".join(lines)
+
+
+def _kmap(lines) -> str:
+    """Raw HTML block rendered by docs/assets/codemap.js at natural size, clickable."""
+    return f'<div class="kmap">\n{html.escape(chr(10).join(lines))}\n</div>'
+
+
 def _label(path: str) -> str:
     """Short box title: file name, or 'folder/model.py' for experiment files."""
     p = Path(path)
     if p.parts[0] == "research":
         return f"{p.parent.name.replace('ordinal_regression_', '')}/{p.name}"
     return p.name
-
-
-def _short(text: str, n: int = 70) -> str:
-    return text if len(text) <= n else text[: n - 1].rstrip() + "…"
 
 
 class CodeMap:
@@ -82,13 +105,13 @@ class CodeMap:
 
     def overview(self) -> str:
         """File-level diagram: one box per file per stage, story arrows between them."""
-        lines = ["```mermaid", "flowchart TB"]
+        lines = ["flowchart TB"]
         for stage in self.spec["stages"]:
             lines.append(f'  subgraph {stage["id"]}["{_esc(stage["title"])}"]')
             lines.append("    direction LR")
             for f in stage["files"]:
                 _, mod = self.info(f["path"], "__module__")
-                label = f"<b>{_label(f['path'])}</b><br/>{_esc(_short(mod, 48))}"
+                label = f"<b>{_label(f['path'])}</b><br/>{_wrap(_esc(mod), 30)}"
                 lines.append(f'    {_nid(stage["id"] + f["path"])}["{label}"]')
             lines.append("  end")
         for e in self.spec.get("file_edges", []):
@@ -99,35 +122,37 @@ class CodeMap:
             for f in stage["files"]:
                 nid = _nid(stage["id"] + f["path"])
                 lines.append(f'  click {nid} "{self.link(f["path"])}" _blank')
-        lines.append("```")
-        return "\n".join(lines)
+        return _kmap(lines)
 
     def stage(self, sid: str) -> str:
         """Function-level diagram for one stage, plus a table with links."""
         stage = next(s for s in self.spec["stages"] if s["id"] == sid)
         out = [f"### {stage['title']}", "", stage.get("story", "").strip(), ""]
-        out += ["```mermaid", "flowchart TB"]
+        diagram = ["flowchart LR"]
         for f in stage["files"]:
-            out.append(f'  subgraph {_nid(f["path"])}_box["{_label(f["path"])}"]')
+            if not f.get("functions"):
+                continue  # file shown only in the overview
+            diagram.append(f'  subgraph {_nid(f["path"])}_box["{_label(f["path"])}"]')
+            diagram.append("    direction TB")
             for fn in f.get("functions", []):
                 _, doc = self.info(f["path"], fn)
-                label = f"<b>{fn}()</b><br/>{_esc(_short(doc))}"
-                out.append(f'    {_nid(f["path"], fn)}["{label}"]')
-            out.append("  end")
+                label = f"<b>{fn}()</b><br/>{_wrap(_esc(doc))}"
+                diagram.append(f'    {_nid(f["path"], fn)}["{label}"]')
+            diagram.append("  end")
         for a, b, *lab in stage.get("flow", []):
             pa, fa = a.split("::")
             pb, fb = b.split("::")
             label = f'|"{_esc(lab[0])}"|' if lab else ""
-            out.append(f"  {_nid(pa, fa)} -->{label} {_nid(pb, fb)}")
+            diagram.append(f"  {_nid(pa, fa)} -->{label} {_nid(pb, fb)}")
         for f in stage["files"]:
             for fn in f.get("functions", []):
-                out.append(f'  click {_nid(f["path"], fn)} "{self.link(f["path"], fn)}" _blank')
-        out += ["```", "", "| Function | File | What it does |", "|---|---|---|"]
+                diagram.append(f'  click {_nid(f["path"], fn)} "{self.link(f["path"], fn)}" _blank')
+        out += [_kmap(diagram), "", "| Function | File | What it does |", "|---|---|---|"]
         for f in stage["files"]:
             for fn in f.get("functions", []):
                 line, doc = self.info(f["path"], fn)
                 out.append(
-                    f"| [`{fn}`]({self.link(f['path'], fn)}) | `{f['path']}:{line}` | {doc or '—'} |"
+                    f"| [`{fn}`]({self.link(f['path'], fn)}) | `{f['path']}:{line}` | {_cell(doc) or '—'} |"
                 )
         return "\n".join(out) + "\n"
 
@@ -149,8 +174,8 @@ def hardcoded_table(url: str) -> str:
             rel = path.relative_to(ROOT).as_posix()
             for i, line in enumerate(path.read_text().splitlines(), 1):
                 if "# HARDCODED:" in line:
-                    what = line.split("# HARDCODED:", 1)[1].strip().replace("|", "\\|")
-                    rows.append(f"| [`{rel}:{i}`]({url}/{rel}#L{i}) | {what} |")
+                    what = line.split("# HARDCODED:", 1)[1].strip()
+                    rows.append(f"| [`{rel}:{i}`]({url}/{rel}#L{i}) | {_cell(what)} |")
     return "\n".join(rows) + "\n"
 
 

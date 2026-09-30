@@ -21,8 +21,16 @@ theme:
       accent: amber
       toggle: {icon: material/weather-sunny, name: Light mode}
 
+extra_css:
+  - assets/codemap.css
+
+extra_javascript:
+  - path: assets/codemap.js
+    type: module
+
 hooks:
   - docs/hooks/codemap.py
+  - docs/hooks/shape_refs.py
 
 exclude_docs: |
   hooks/
@@ -55,8 +63,30 @@ plugins:
             show_if_no_docstring: true
             members_order: source
             heading_level: 2
+            docstring_options:
+              warn_unknown_params: false
+              warn_missing_types: false
 
 nav:
   - Home: index.md
   - Code map: code-map.md
+  - Data contract: data-contract.md
+  - Model, loss, metrics: model.md
+  - Experiments (DAM 1/2/3): experiments.md
+  - Hardcoded values: hardcoded.md
+  - Limitations: limitations.md
+  - API reference:
+      - scripts/launcher.py: reference/launcher.md
+      - launcher_utils: reference/launcher_utils.md
+      - datasets_and_dataloaders: reference/datasets_and_dataloaders.md
+      - dataset_utils: reference/dataset_utils.md
+      - augmentations: reference/augmentations.md
+      - feature_extraction_whisper: reference/feature_extraction_whisper.md
+      - base_models: reference/base_models.md
+      - losses: reference/losses.md
+      - ordinal_thresholding: reference/ordinal_thresholding.md
+      - metrics: reference/metrics.md
+      - constants: reference/constants.md
+      - utils: reference/utils.md
+      - plotting: reference/plotting.md
   - Contributing: STYLE.md

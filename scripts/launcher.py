@@ -1,3 +1,10 @@
+"""Command-line entry point: `python scripts/launcher.py <mode> config.yaml`.
+
+Stage: launch. Builds LauncherConfig (model + data) from the YAML, sets up the
+Lightning Trainer, W&B logging and callbacks, then trains, evaluates, caches
+backbone outputs or exports the model (.pt2).
+"""
+
 import argparse
 import os
 import shutil
@@ -36,6 +43,11 @@ def launcher(
     config: Mapping | str | Path,
     experiment_dir: Optional[str | Path] = None,
 ):
+    """Run one mode (train/evaluate/cache/compile) end to end from a YAML config.
+
+    Builds config, callbacks and Trainer (GPU fp16 or CPU fp32, DDP), then dispatches.
+    Note: training_examples_per_eval must be a multiple of the global batch size.
+    """
     if mode not in typing.get_args(Modes):
         raise ValueError(
             f"Unrecognized mode {mode}. Valid modes are: {typing.get_args(Modes)}."
@@ -66,6 +78,7 @@ def launcher(
     trainer = Trainer(
         accelerator="gpu" if num_gpus > 0 else "cpu",
         num_nodes=int(os.environ.get("NUM_NODES", 1)),
+        # HARDCODED: DDP with find_unused_parameters=True; fp16 on GPU, fp32 on CPU.
         strategy=DDPStrategy(
             find_unused_parameters=True
         ),  # LoRA seems to need this set to True
@@ -95,6 +108,7 @@ def launcher(
 
 
 def run_training(trainer: Trainer, launcher_config: LauncherConfig):
+    """Fit on train/val, reload the best checkpoint, then test it on the test split."""
     train_loader = launcher_config.get_data_loader("train", training_mode=True)
     val_loader = launcher_config.get_data_loader("val", training_mode=False)
     test_loader = launcher_config.get_data_loader("test", training_mode=False)
@@ -113,6 +127,7 @@ def run_training(trainer: Trainer, launcher_config: LauncherConfig):
 
 
 def run_evaluation(trainer: Trainer, launcher_config: LauncherConfig):
+    """Test a trained checkpoint (model_params.ckpt_path) on the test split."""
     if launcher_config.model_params.ckpt_path == "":
         raise ValueError("Need to set a checkpoint path (`ckpt_path`) for evaluation.")
 
@@ -127,6 +142,10 @@ def run_evaluation(trainer: Trainer, launcher_config: LauncherConfig):
 def _setup_launcher(
     config: Mapping | str | Path, experiment_dir: Optional[str | Path] = None
 ) -> LauncherParams:
+    """Load the YAML into LauncherConfig and create the W&B logger on rank 0 only.
+
+    Note: wandb_entity/wandb_project are hardcoded to None and raise; set them here.
+    """
 
     # some things need to be done only for one process
     is_init_logger = (
@@ -135,6 +154,7 @@ def _setup_launcher(
     )
 
     launcher_config = LauncherConfig(config, experiment_dir)
+    # HARDCODED: W&B entity/project are None, so every run raises until you set them.
     wandb_entity = None
     wandb_project = None
     if wandb_entity is None:
@@ -154,11 +174,16 @@ def _setup_launcher(
 
 
 def _setup_callbacks(launcher_config: LauncherConfig) -> list[pl.callbacks.Callback]:
+    """Best-checkpoint saver, early stopping and LR monitor on "mode:metric" monitor_loss.
+
+    Hardcoded: keeps top-1 + last.ckpt in chkpts/<experiment_name>/ (/mnt/chkpts on k8s).
+    """
     (
         monitor_loss_mode,
         monitor_loss_name,
     ) = launcher_config.training_params.monitor_loss.split(":")
     # on Kubernetes space on OS disk can be low so store checkpoints to the external disk
+    # HARDCODED: checkpoint root; /mnt/chkpts when JOB_NAME (Kubernetes) is set.
     chkpt_dir = "/mnt/chkpts" if "JOB_NAME" in os.environ else "chkpts"
     checkpoint_callback = DistributedModelCheckpoint(
         dirpath=f"{chkpt_dir}/{launcher_config.experiment_name}/",
@@ -187,6 +212,10 @@ def _setup_callbacks(launcher_config: LauncherConfig) -> list[pl.callbacks.Callb
 
 
 def _log_to_wandb(launcher_config: LauncherConfig, launcher_logger: LauncherLogger):
+    """Upload experiment + kirad source, package versions and ideal log-mel energies to W&B.
+
+    Note: get_package_info("kipy") fails without the private kipy package.
+    """
 
     if launcher_logger is not None:
         # Log the code
@@ -203,6 +232,7 @@ def _log_to_wandb(launcher_config: LauncherConfig, launcher_logger: LauncherLogg
 
         # Log kipy and kirad info
         data = []
+        # HARDCODED: "kipy" is a private Kintsugi package; remove it if unavailable.
         for package in ["kipy", "kirad"]:
             package_info = get_package_info(package)
             data.append(package_info)
@@ -236,6 +266,7 @@ def _log_to_wandb(launcher_config: LauncherConfig, launcher_logger: LauncherLogg
 def _log_datasets_to_wandb(
     launcher_config: LauncherConfig, launcher_logger: LauncherLogger
 ):
+    """Upload the metadata table actually used for each split as a W&B "dataset" artifact."""
     if launcher_logger is not None:
         # Log dataset splits that were used
         used_datasets = dict()
@@ -247,6 +278,10 @@ def _log_datasets_to_wandb(
 def run_caching(
     trainer: Trainer, launcher_config: LauncherConfig, launcher_logger: LauncherLogger
 ):
+    """Run the backbone over train/val/test and store its outputs in W&B (cache mode).
+
+    Requires GPUs and no backbone_cache in data_params; a dummy predict() starts DDP.
+    """
     # prohibit running caching if cache is set
     assert "backbone_cache" not in launcher_config.config["data_params"]
 
@@ -290,6 +325,10 @@ def run_caching(
 
 
 def run_compilation(launcher_config: LauncherConfig):
+    """Export the model with torch.export on one test window, check outputs, log .pt2 to W&B.
+
+    Note: uses only the audio feature; needs an active wandb.run.
+    """
 
     # we need exactly one sample for running a compiler
     dummy_dataset = launcher_config.get_dataset("test")
@@ -323,6 +362,7 @@ def run_compilation(launcher_config: LauncherConfig):
 
 
 def _parse_args():
+    """Parse CLI args: mode, config path, optional --experiment-dir."""
     parser = argparse.ArgumentParser(
         description="Launcher for training, tuning, and evaluation."
     )
@@ -356,6 +396,7 @@ def _parse_args():
 
 
 def setup_multi_node_environment():
+    """Wait for all Kubernetes job pods, then set MASTER_ADDR/PORT, WORLD_SIZE, NODE_RANK."""
 
     # this is a bit hacky.
     # kubernetes package is only required inside docker container worker,
@@ -376,6 +417,7 @@ def setup_multi_node_environment():
 
         # get pods associated with this job
         pods = core_v1.list_namespaced_pod(
+            # HARDCODED: Kubernetes namespace "default".
             namespace="default", label_selector=f"job-name={job_name}"
         )
 
@@ -402,6 +444,7 @@ def setup_multi_node_environment():
         for pod in pods.items
         if pod.metadata.annotations["batch.kubernetes.io/job-completion-index"] == "0"
     ][0]
+    # HARDCODED: DDP master port 12355.
     os.environ["MASTER_PORT"] = "12355"  # some arbitrary recommended port
     os.environ["WORLD_SIZE"] = str(int(num_nodes * torch.cuda.device_count()))
     os.environ["NODE_RANK"] = os.environ["JOB_COMPLETION_INDEX"]

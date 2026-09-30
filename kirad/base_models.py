@@ -1,4 +1,9 @@
-"""Model building blocks."""
+"""Model building blocks.
+
+Stage: model + loss + thresholds/metrics. Pretrained backbones (Whisper, BERT, LLaMA),
+the shared MultitaskHead, and the Lightning modules that compute the CORAL loss per task,
+tune thresholds on validation and log Sn/Sp metrics. Used by research/stable/*/model.py.
+"""
 
 from collections import OrderedDict
 from dataclasses import asdict
@@ -84,6 +89,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
 
     """
 
+    # HARDCODED: above 10,000 scores, Sn/Sp thresholds use a 10,000-point linspace grid
     THRESH_LIM: int = 10_000
 
     def __init__(
@@ -93,13 +99,15 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         metric_target_cutoffs: OrderedDict[int, str] | Sequence[int],
         loss_name: str = "loss",
         score_table_name: str = "scores",
-        indet_budgets: Sequence[float] = (0.0, 0.4),
+        indet_budgets: Sequence[float] = (0.0, 0.4),  # HARDCODED: 0% / 40% indet budgets
         coral_loss_weight: float = 1.0,
         score_variance_loss_weight: float = 0.0,
         kd_loss_weight: float = 0.0,
         mean_before_loss: Optional[dict[str, bool]] = None,
     ):
-        """Initialize the model.
+        """Build CORAL loss, six threshold tuners, Sn=Sp buffers and val/test accumulators.
+
+        Initialize the model.
 
         Parameters
         ----------
@@ -175,11 +183,13 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         self.kd_loss_weight = kd_loss_weight
         self.coral_loss_weight = coral_loss_weight
         if mean_before_loss is None:
+            # HARDCODED: per-window loss in train; loss of the per-recording mean in val/test
             self.mean_before_loss = {"train": False, "val": True, "test": True}
         else:
             self.mean_before_loss = mean_before_loss
 
     def load_state_dict(self, state_dict, strict=True):
+        """Resize indet-threshold buffers to the checkpoint's shapes, then load weights."""
         if "state_dict" in state_dict:
             state_dict = state_dict["state_dict"]
         for c_idx in self.metric_target_cutoff_names:
@@ -188,7 +198,9 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         super().load_state_dict(state_dict, strict)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Defaults to identity for case where this class is instantiated directly rather than subclassed.
+        """Identity: the multi-task parent computes scores; this module only adds loss/metrics.
+
+        Defaults to identity for case where this class is instantiated directly rather than subclassed.
 
         This default is to enable the case where a model contains multiple ordinal regression tasks (e.g. depression
         and anxiety) sharing some computation, which is therefore implemented elsewhere. If there is only a single
@@ -211,6 +223,11 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         scores: torch.Tensor,
         labels: torch.Tensor,
     ) -> dict[str, float]:
+        """Log AUROC and min(Sn, Sp) per binary cut and indet budget, plus their mean.
+
+        On test, also Sn/Sp/indet fraction at the thresholds tuned on validation.
+        Returns the dict of logged metrics (keys bucketed_metrics/... and metrics/...).
+        """
         # Log ordinal bucketed metrics
         auroc_sum = {budget: 0.0 for budget in self.indet_budget_names}
         sn_eq_sp_sum = {budget: 0.0 for budget in self.indet_budget_names}
@@ -285,6 +302,10 @@ class OrdinalRegressionPLModule(pl.LightningModule):
     def log_thresholding_metrics(
         self, split: str, *, scores: torch.Tensor, quantized_labels: torch.tensor
     ) -> dict[str, float]:
+        """Log each tuned method's cost when scored with every method's thresholds.
+
+        Also logs the cost of the best constant-output classifier as a baseline.
+        """
         metrics = dict()
         for key1, value1 in self.thresholding.items():
             if isinstance(value1, OptimalOrdinalThresholdingViaDynamicProgramming):
@@ -313,6 +334,11 @@ class OrdinalRegressionPLModule(pl.LightningModule):
     def log_test_indet_analysis(
         self, *, scores: torch.Tensor, labels: torch.tensor
     ) -> None:
+        """W&B line plots of test Sn, Sp, indet fraction vs the val indeterminate budget.
+
+        One plot per binary cut, plus the average over cuts. Test split only.
+        Hardcoded: 1000 interpolation points for the averaged curve.
+        """
         task = self.score_table_name.split("-")[-1]
         # only do this for test because wandb doesn't give a good way to navigate val results by epoch at this time
         dfs = []
@@ -346,6 +372,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
                     }
                 )
         max_indet = min(df.indet_budget_val.max() for df in dfs)
+        # HARDCODED: 1000 interpolation points
         indet_budget_val = np.linspace(0.0, max_indet, num=1000)
         data = dict(indet_budget_val=indet_budget_val)
         for field in ("indet_frac_test", "sn_test", "sp_test"):
@@ -369,13 +396,21 @@ class OrdinalRegressionPLModule(pl.LightningModule):
             )
 
     def on_validation_epoch_end(self) -> None:
+        """Lightning hook: run the val epoch-end logic and free CUDA cache."""
         self.on_validation_test_epoch_end("val")
         torch.cuda.empty_cache()
 
     def on_test_epoch_end(self) -> None:
+        """Lightning hook: run the test epoch-end logic."""
         self.on_validation_test_epoch_end("test")
 
     def on_validation_test_epoch_end(self, split: str) -> dict[str, float]:
+        """Gather scores, log W&B table, tune thresholds on val, compute Sn/Sp metrics.
+
+        Dedups uuids (DDP repeats samples), uploads scores-<task>-<split>-<run> artifact,
+        builds one IndetSnSpArray per binary cut. Only on "val": tunes the six threshold
+        methods and stores the Sn=Sp operating points; "test" reuses them.
+        """
         tensor_uuids, *rests = self.accumulators[split].compute()
         uuids = tensor_to_strs(tensor_uuids)
         # Deduplicate -- pytorch runs some items twice to keep all replicas busy
@@ -445,6 +480,12 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         }
 
     def compute_and_log_loss(self, logits, y, lengths, split):
+        """Loss = coral_w·CORAL + var_w·Var(window scores) + kd_w·MSE(teacher), logged.
+
+        CORAL is loss(mean(scores)) if mean_before_loss[split] else mean(loss(per-window)).
+        KD term only if the label dict has the KD field (teacher score per recording).
+        Shapes: logits [ΣW, 1], y[PRIMARY] [B], lengths [B] -> scalar.
+        """
         logits_mean, logits_variance = average_and_variance_tensor_in_segments(
             logits, lengths
         )
@@ -501,6 +542,10 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         return loss_mean
 
     def step(self, split, batch, batch_idx):
+        """Accumulate per-recording mean/var scores for val/test, then return the loss.
+
+        Shapes: batch features -> forward -> [ΣW, 1]; accumulated per recording [B].
+        """
         logits = self.forward(batch[DatasetFields.FEATURES])
         if split in self.accumulators:
             logits_mean, logits_var = average_and_variance_tensor_in_segments(
@@ -520,15 +565,19 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         )
 
     def training_step(self, batch, batch_idx):
+        """Lightning train step for a single-task subclass."""
         return self.step("train", batch, batch_idx)
 
     def validation_step(self, batch, batch_idx):
+        """Lightning val step; loss is logged, not returned."""
         self.step("val", batch, batch_idx)
 
     def test_step(self, batch, batch_idx):
+        """Lightning test step; loss is logged, not returned."""
         self.step("test", batch, batch_idx)
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
+        """Per-recording score: forward, then mean over its windows. Shapes: [B, 1]."""
         logits = average_tensor_in_segments(
             self.forward(batch[DatasetFields.FEATURES]),
             batch[DatasetFields.LENGTH],
@@ -538,11 +587,20 @@ class OrdinalRegressionPLModule(pl.LightningModule):
 
 
 class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
+    """Multi-task wrapper: one OrdinalRegressionPLModule per task on a shared model.
+
+    Subclasses (the DAM models) define forward(features, lengths) -> ({task: scores}, lengths).
+    """
     def __init__(self, tasks: Mapping[str, OrdinalRegressionPLModule]):
+        """Store the per-task modules (loss, thresholds, accumulators) in a ModuleDict."""
         super().__init__()
         self.tasks = nn.ModuleDict(tasks)
 
     def load_state_dict(self, state_dict, strict=True):
+        """Resize every task's indet-threshold buffers, then load weights.
+
+        Missing/unexpected keys are only logged (with strict=False).
+        """
         if "state_dict" in state_dict:
             state_dict = state_dict["state_dict"]
         for task_name, task in self.tasks.items():
@@ -571,6 +629,7 @@ class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
             )
 
     def configure_model(self) -> None:
+        """Give each task the trainer and a logger that prefixes names with '<task>/'."""
         for key, task in self.tasks.items():
             # This has two effects:
             #   (1) installs a logger in the tasks, which current version of lightning does not do automatically
@@ -579,12 +638,18 @@ class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
             task.trainer = self.trainer
 
     def get_sub_logger(self, key):
+        """Return a log function that prefixes metric names with '<key>/'."""
         def sub_logger(name, *args, **kwargs):
+            """self.log with the task prefix."""
             self.log(f"{key}/{name}", *args, **kwargs)
 
         return sub_logger
 
     def on_validation_test_epoch_end(self, split) -> None:
+        """Run each task's epoch end, then log harmonic mean of shared metrics across tasks.
+
+        The combined metric (e.g. metrics/val/sn_eq_sp@0%i) drives checkpointing.
+        """
         all_tasks_metrics = [
             task.on_validation_test_epoch_end(split) for task in self.tasks.values()
         ]
@@ -600,13 +665,16 @@ class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
                 self.log(metric_name, m, sync_dist=True)
 
     def on_validation_epoch_end(self) -> None:
+        """Lightning hook: val epoch end for all tasks."""
         self.on_validation_test_epoch_end("val")
 
     def on_test_epoch_end(self) -> None:
+        """Lightning hook: test epoch end for all tasks."""
         self.on_validation_test_epoch_end("test")
 
     def compute_features_to_cache(self, x, lengths) -> list:
-        """
+        """Backbone embeddings split per recording, for the cache command (abstract).
+
         Returns list of tensors with shapes N_ExD,
         where N_E - number of embedding vectors associated with each sample and
         D - embedding dimensionality.
@@ -617,15 +685,22 @@ class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
         )
 
     def training_step(self, batch, batch_idx):
+        """Lightning train step: returns the step dict with total_loss."""
         return self.step("train", batch, batch_idx)
 
     def validation_step(self, batch, batch_idx):
+        """Lightning val step; losses are logged, not returned."""
         self.step("val", batch, batch_idx)
 
     def test_step(self, batch, batch_idx):
+        """Lightning test step; losses are logged, not returned."""
         self.step("test", batch, batch_idx)
 
     def step(self, split, batch, batch_idx):
+        """Run model once, sum each task's loss (task.step) into total_loss.
+
+        Each task gets its own scores and labels: logits[task], batch[label][task].
+        """
         logits, lengths = self.forward(
             batch[DatasetFields.FEATURES], batch[DatasetFields.LENGTH]
         )
@@ -659,6 +734,7 @@ class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
         }
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
+        """Per-recording scores for each task: {task: [B, 1]} (mean over windows)."""
         logits, lengths = self.forward(
             batch[DatasetFields.FEATURES], batch[DatasetFields.LENGTH]
         )
@@ -673,11 +749,14 @@ class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
 class MultiTaskOrdinalRegressionBackboneDictPLModule(
     MultiTaskOrdinalRegressionPLModule
 ):
-    """Version of `MultiTaskOrdinalRegressionPLModule` that correctly loads DAM 1 weights into the audio backbone."""
+    """Multi-task module whose backbone is a ModuleDict; loads DAM 1 weights into "audio".
+
+    Version of `MultiTaskOrdinalRegressionPLModule` that correctly loads DAM 1 weights into the audio backbone."""
 
     backbone: nn.ModuleDict
 
     def load_state_dict(self, state_dict, strict=True):
+        """Rename backbone.base_model.* keys to backbone.audio.base_model.* before loading."""
         if "state_dict" in state_dict:
             state_dict = state_dict["state_dict"]
         # If trying to load DAM 1 weights, load them into the "audio" backbone
@@ -691,12 +770,19 @@ class MultiTaskOrdinalRegressionBackboneDictPLModule(
 
 
 class KintsugiBackboneBase(pl.LightningModule):
+    """Base for pretrained backbones: holds self.backbone and adds optional LoRA."""
     backbone: nn.Module
 
     def __init__(self):
+        """No parameters; subclasses build self.backbone."""
         super().__init__()
 
     def apply_lora(self, lora_params: Optional[Mapping[str, Any]] = None):
+        """Wrap self.backbone with PEFT LoRA from lora_params; no-op (full fine-tune) if empty.
+
+        lora_params go straight to peft.LoraConfig (r, lora_alpha, target_modules,
+        modules_to_save, ...); modules_to_save layers (e.g. conv1/conv2) train fully.
+        """
         if lora_params is not None and len(lora_params) > 0:
             lora_config = LoraConfig(**lora_params)
             self.backbone = get_peft_model(self.backbone, lora_config)
@@ -718,13 +804,19 @@ class KintsugiBackboneBase(pl.LightningModule):
 
 
 class WhisperBackbone(KintsugiBackboneBase):
+    """Whisper encoder only (decoder dropped), optionally mean-pooled over time."""
     def __init__(
         self,
-        model: str = "openai/whisper-small.en",
+        model: str = "openai/whisper-small.en",  # HARDCODED: English-only Whisper (DAM 1-3)
         hf_config: Optional[Mapping[str, Any]] = None,
         lora_params: Optional[Mapping[str, Any]] = None,
         mean_pool: bool = True,
     ):
+        """Load the pretrained Whisper encoder from HuggingFace and apply LoRA.
+
+        Note: if max_source_positions != 1500, mismatched weights (positional table)
+        are re-initialized.
+        """
         super().__init__()
         hf_config = hf_config if hf_config is not None else dict()
         backbone_config = WhisperConfig.from_pretrained(model, **hf_config)
@@ -732,6 +824,7 @@ class WhisperBackbone(KintsugiBackboneBase):
             WhisperModel.from_pretrained(
                 model,
                 config=backbone_config,
+                # HARDCODED: 1500 encoder positions = 30 s of audio (Whisper default)
                 ignore_mismatched_sizes=backbone_config.max_source_positions != 1500,
             )
             .get_encoder()
@@ -742,6 +835,10 @@ class WhisperBackbone(KintsugiBackboneBase):
         self.mean_pool = mean_pool
 
     def forward(self, x, *args, **kwargs):
+        """Whisper encoder on log-mel windows, mean over time -> [ΣW, D] (768 for small.en).
+
+        Shapes: x["audio"] [ΣW, 80, 3000] -> hidden [ΣW, 1500, D] -> [ΣW, D] if mean_pool.
+        """
         output = self.backbone(x["audio"]).last_hidden_state
         if self.mean_pool:
             output = output.mean(dim=1)
@@ -749,13 +846,15 @@ class WhisperBackbone(KintsugiBackboneBase):
 
 
 class Wav2Vec2Backbone(KintsugiBackboneBase):
+    """wav2vec2 encoder on raw audio, mean-pooled (not used by the stable DAM configs)."""
     def __init__(
         self,
-        model: str = "facebook/wav2vec2-xls-r-300m",
+        model: str = "facebook/wav2vec2-xls-r-300m",  # HARDCODED: default model id
         hf_config: Optional[Mapping[str, Any]] = None,
         lora_params: Optional[Mapping[str, Any]] = None,
         mean_pool: bool = True,
     ):
+        """Load the pretrained wav2vec2 model from HuggingFace and apply LoRA."""
         super().__init__()
         hf_config = hf_config if hf_config is not None else dict()
         backbone_config = Wav2Vec2Config.from_pretrained(model, **hf_config)
@@ -768,6 +867,7 @@ class Wav2Vec2Backbone(KintsugiBackboneBase):
         self.mean_pool = mean_pool
 
     def forward(self, x, *args, **kwargs):
+        """Encode raw audio x["audio"] [ΣW, samples] -> [ΣW, D] (mean over frames if mean_pool)."""
         output = self.backbone(x["audio"]).last_hidden_state
         if self.mean_pool:
             output = output.mean(dim=1)
@@ -775,12 +875,14 @@ class Wav2Vec2Backbone(KintsugiBackboneBase):
 
 
 class BERTBackbone(KintsugiBackboneBase):
+    """BERT on transcript tokens; returns the pooler output [ΣW, 768] (DAM 2 text branch)."""
     def __init__(
         self,
-        model: str = "google-bert/bert-base-uncased",
+        model: str = "google-bert/bert-base-uncased",  # HARDCODED: English BERT (DAM 2 text)
         hf_config: Optional[Mapping[str, Any]] = None,
         lora_params: Optional[Mapping[str, Any]] = None,
     ):
+        """Load pretrained BERT from HuggingFace and apply LoRA."""
         super().__init__()
         hf_config = hf_config if hf_config is not None else dict()
         backbone_config = BertConfig.from_pretrained(model, **hf_config)
@@ -789,20 +891,26 @@ class BERTBackbone(KintsugiBackboneBase):
         self.backbone_dim = backbone_config.hidden_size
 
     def forward(self, x, *args, **kwargs):
+        """Pooler output ([CLS] + dense + tanh) of x["text"] tokens. Shapes: -> [ΣW, 768]."""
         _, pooler_output = self.backbone(**x["text"], return_dict=False)
         return pooler_output
 
 
 class LLAMABackbone(KintsugiBackboneBase):
+    """LLaMA cut to num_layers layers; embeds text as the last real token's hidden state."""
     param_group_name = "llama_backbone"
 
     def __init__(
         self,
-        model: str = "meta-llama/Llama-3.2-3B-Instruct",
+        model: str = "meta-llama/Llama-3.2-3B-Instruct",  # HARDCODED: default model id
         hf_config: Optional[Mapping[str, Any]] = None,
         lora_params: Optional[Mapping[str, Any]] = None,
-        num_layers: int = 15,
+        num_layers: int = 15,  # HARDCODED: LLaMA truncated to its first 15 layers
     ):
+        """Load LLaMA (HF id or W&B artifact URL), keep the first num_layers layers, LoRA.
+
+        Note: LLaMA is gated on HuggingFace, so configs pass a W&B artifact URL.
+        """
         super().__init__()
         hf_config = hf_config if hf_config is not None else dict()
 
@@ -821,6 +929,10 @@ class LLAMABackbone(KintsugiBackboneBase):
         self.backbone_dim = self.backbone.config.hidden_size
 
     def forward(self, x, *args, **kwargs):
+        """Last hidden state at the last non-padded token of each sequence.
+
+        Shapes: x["text"] input_ids/attention_mask [ΣW, L] -> [ΣW, D] (3072 for Llama-3.2-3B).
+        """
         output = self.backbone(
             input_ids=x["text"]["input_ids"],
             attention_mask=x["text"]["attention_mask"],
@@ -840,8 +952,18 @@ class LLAMABackbone(KintsugiBackboneBase):
 
 
 class MultitaskHead(pl.LightningModule):
+    """Shared MLP followed by one small head per task (depression, anxiety).
+
+    e.g. D -> 256 (Mish) -> 64, then per task 64 -> 128 (Mish, dropout) -> 1.
+    """
     class SharedLayers(nn.Module):
+        """Shared MLP: Linear+Mish per proj_dim, last Linear without activation (e.g. D->256->64).
+
+        The activation-free last layer acts as shared low-rank B in W_t = H_t·B.
+        With a single proj_dim, Mish is kept after it (no factorization).
+        """
         def __init__(self, input_dim, proj_dims):
+            """Build Linear(+Mish) layers input_dim -> proj_dims[0] -> ... -> proj_dims[-1]."""
             super().__init__()
 
             # Stack linear layers with activation layers in between. When more than one
@@ -862,10 +984,13 @@ class MultitaskHead(pl.LightningModule):
             self.shared_layers = nn.Sequential(*modules)
 
         def forward(self, x):
+            """Shapes: [ΣW, D] -> [ΣW, proj_dims[-1]]."""
             return self.shared_layers(x)
 
     class TaskHead(nn.Module):
+        """Per-task head: Linear(in, proj_dim) -> Mish -> Dropout -> Linear(proj_dim, 1, no bias)."""
         def __init__(self, input_dim, proj_dim, dropout):
+            """No bias on the final layer: CORAL learns the per-cutoff biases instead."""
             super().__init__()
 
             self.linear = nn.Linear(input_dim, proj_dim)
@@ -874,6 +999,7 @@ class MultitaskHead(pl.LightningModule):
             self.final_layer = nn.Linear(proj_dim, 1, bias=False)
 
         def forward(self, x):
+            """Shapes: [ΣW, in] -> [ΣW, 1] (one ordinal score per window)."""
             x = self.linear(x)
             x = self.activation(x)
             x = self.dropout(x)
@@ -886,6 +1012,7 @@ class MultitaskHead(pl.LightningModule):
         shared_projection_dim: int | list[int],
         tasks: Mapping[Literal["depression", "anxiety"], Mapping[str, Any]],
     ):
+        """Build SharedLayers(backbone_dim, shared_projection_dim) and a TaskHead per task config."""
         super().__init__()
 
         if not isinstance(shared_projection_dim, list):
@@ -902,16 +1029,19 @@ class MultitaskHead(pl.LightningModule):
         )
 
     def forward(self, x):
+        """Shared layers, then one TaskHead per task -> {task: [ΣW, 1] score}."""
         x = self.shared_layers(x)
         return {task: head(x) for task, head in self.classifier_head.items()}
 
 
 class ResNetHead(pl.LightningModule):
+    """Alternative head: 2-D ResNet over [N, T, D] features, one logit per task (unused)."""
     def __init__(
         self,
         resnet_model: str,
         tasks: list[str],
     ):
+        """ResNet from a HF config, randomly initialized, 1 input channel, len(tasks) outputs."""
         super().__init__()
         resnet_config = ResNetConfig.from_pretrained(
             resnet_model, num_labels=len(tasks), num_channels=1
@@ -920,17 +1050,20 @@ class ResNetHead(pl.LightningModule):
         self.tasks = tasks
 
     def forward(self, x):
+        """Shapes: [N, T, D] -> {task: [N, 1]}."""
         x = self.resnet(x[:, None, ...]).logits
         return {task: x[..., i : i + 1] for i, task in enumerate(self.tasks)}
 
 
 class ResNetHead1d(pl.LightningModule):
+    """Alternative head: ResNet with feature dim as channels over time (unused)."""
     def __init__(
         self,
         resnet_model: str,
         tasks: list[str],
         backbone_dim: int,
     ):
+        """ResNet from a HF config, randomly initialized, backbone_dim channels, len(tasks) outputs."""
         super().__init__()
         resnet_config = ResNetConfig.from_pretrained(
             resnet_model, num_labels=len(tasks), num_channels=backbone_dim
@@ -939,5 +1072,6 @@ class ResNetHead1d(pl.LightningModule):
         self.tasks = tasks
 
     def forward(self, x):
+        """Shapes: [N, T, D] -> transposed to [N, D, T, 1] -> {task: [N, 1]}."""
         x = self.resnet(torch.transpose(x, 1, 2)[..., None]).logits
         return {task: x[..., i : i + 1] for i, task in enumerate(self.tasks)}
