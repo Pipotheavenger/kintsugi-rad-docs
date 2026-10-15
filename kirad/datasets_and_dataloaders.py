@@ -60,6 +60,7 @@ INFERENCE_BATCH_SIZE = 16
 
 # HARDCODED: task -> CSV label column (depression = PHQ, anxiety = GAD)
 DEFAULT_LABEL_COLUMN = {"depression": "phq", "anxiety": "gad"}
+# Allowed values for string options; pydantic validates configs against these.
 MERGE_ROWS_BY_SUBJECT_VALUES = Literal[False, "many_to_one", "many_to_many"]
 TEXT_OUTPUT_PER_SAMPLE_VALUES = Literal["cyclic", "merge"]
 WINDOW_METHOD_VALUES = Literal[
@@ -186,8 +187,10 @@ class KintsugiMetadata(BaseModel, Dataset):
     def __init__(self, *args, **kwargs):
         """Load and concatenate all metadata sources, index by uuid, preprocess, filter."""
         super().__init__(*args, **kwargs)
+        # Accept one metadata source or a list of them.
         if not isinstance(self.df_or_dataset_version, list):
             self.df_or_dataset_version = [self.df_or_dataset_version]
+        # Load every source and concatenate into one table of recordings.
         self._df = pd.concat(
             load_relative_dataset(
                 item,
@@ -210,6 +213,7 @@ class KintsugiMetadata(BaseModel, Dataset):
         Adds column num_windows (windows of the "all" method per recording).
         Note: uses its own max_overlap_frac; keep it equal to the audio dataset's.
         """
+        # Join teacher (KD) scores by uuid as extra scores_<task> columns.
         if self.score_targets_csv is not None:
             score_target_df = pd.read_csv(self.score_targets_csv)
             score_target_df.set_index("uuid", inplace=True)
@@ -221,10 +225,12 @@ class KintsugiMetadata(BaseModel, Dataset):
                 suffixes=(None, "_target"),
             )
 
+        # Merge rows of the same subject (audio is concatenated across their rows).
         if self.merge_rows_by_subject:
             self._df = merge_df_rows_by_subject(self._df)
 
             if self.merge_rows_by_subject == "many_to_many":
+                # Expand each subject to one row per text_index (0..n-1).
                 self._df["num_files"] = self._df["filename"].map(
                     lambda fn: 1 if isinstance(fn, str) else len(fn)
                 )
@@ -290,6 +296,7 @@ class KintsugiMetadata(BaseModel, Dataset):
         kd is added only when a scores_<task> column exists (from score_targets_csv).
         """
         row = self._df.loc[uuid]
+        # Raw score of each task from its CSV label column (primary label).
         label = {
             task: {DatasetFields.LabelFields.PRIMARY: row[label_column]}
             for task, label_column in self.label_column.items()
@@ -390,12 +397,13 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
         Each augmentation config is {class_name, params, aug_prob}.
         """
         super().__init__(*args, **kwargs)
+        # Load ideal log-mel bin energies (file or array) as a tensor for rescaling.
         if self.ideal_logmel_energies is not None:
             if isinstance(self.ideal_logmel_energies, str | Path):
                 self.ideal_logmel_energies = np.load(self.ideal_logmel_energies)
             self.ideal_logmel_energies = torch.tensor(self.ideal_logmel_energies)
 
-        #
+        # Instantiate each configured augmentation, paired with its apply probability.
         for augmentation_config in self.augmentations:
             class_name = augmentation_config["class_name"]
             params = augmentation_config["params"]
@@ -410,6 +418,7 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
 
     def init_data_processor(self):
         """Create the windowing + feature function (HF extractor or raw passthrough)."""
+        # HF feature extractor, or raw passthrough when preprocessor is False.
         if self.preprocessor:
             preprocessor = AutoFeatureExtractor.from_pretrained(self.preprocessor)
         else:
@@ -450,12 +459,14 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
             If the sample rate of the audio file to be loaded is not
             `TARGET_SAMPLE_RATE`
         """
+        # Fetch the row and list its audio files (merged subjects have several).
         row = self.metadata._df.loc[uuid]
         filenames = (
             row.audio_filename
             if isinstance(row.audio_filename, list)
             else [row.audio_filename]
         )
+        # Load each file, keep channel 0 and concatenate into one waveform.
         audio = torch.zeros(0)
         srs = set()
         for fp in filenames:
@@ -476,6 +487,7 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
             audio = torch.cat((audio, new_audio), dim=0)
             srs.add(sr)
 
+        # All concatenated files must share one sample rate.
         if len(srs) != 1:
             raise ValueError(
                 "Cannot concatenate audios with different sample rates: found sample "
@@ -487,6 +499,7 @@ class KintsugiAudioDataset(KintsugiDatasetBase):
             if random.random() < aug_prob:
                 audio = aug(audio)
 
+        # Cut windows and extract features: [W, ...] per recording.
         features = self._preprocessor_with_audio_normalization(audio, sr)
         # "window_index" is not created in this repo; branch keeps two adjacent windows
         if "window_index" in self.metadata._df.columns:
@@ -546,6 +559,7 @@ class KintsugiTextDataset(KintsugiDatasetBase):
     def init_data_processor(self):
         """Load the tokenizer (local/HF name or W&B artifact) and wrap it with get_tokenizer."""
 
+        # Tokenizer location: download if W&B artifact URL, else name/path as is.
         tokenizer_path = self.preprocessor
         if self.preprocessor.startswith("https:"):
             run, name, tag = get_wandb_run_name_tag_from_artifact_url(self.preprocessor)
@@ -587,6 +601,7 @@ class KintsugiTextDataset(KintsugiDatasetBase):
             if isinstance(row.asr_output_id, list)
             else [row.asr_output_id]
         )
+        # Read each transcript (Whisper JSON; Google fallback reopens the same path).
         texts = []
         for json_filename, asr_output_id in zip(filenames, asr_output_ids):
             try:
@@ -594,6 +609,7 @@ class KintsugiTextDataset(KintsugiDatasetBase):
             except FileNotFoundError:
                 texts.append(read_google_asr_json(json_filename))
 
+        # cyclic: one text per audio window; merge: join all texts into a single string.
         if self.text_output_per_sample == "cyclic":
             num_audio_windows = row["num_windows"]
             text_index = row.get("text_index", random.randint(0, len(texts) - 1))
@@ -603,6 +619,7 @@ class KintsugiTextDataset(KintsugiDatasetBase):
         elif self.text_output_per_sample == "merge":
             text_output = " ".join(texts)
 
+        # Tokenize the chosen text(s) into input_ids / attention_mask.
         features = self._tokenizer(text_output)
 
         return features
@@ -642,6 +659,7 @@ class KintsugiCacheDataset(KintsugiDatasetBase):
             self.backbone_cache = pd.DataFrame(
                 state_dict["backbone_cache"].items(), columns=["uuid", "feat"]
             )
+        # Cache must expose uuid and feat columns.
         if not {"uuid", "feat"}.issubset(set(self.backbone_cache.columns)):
             raise ValueError(
                 "Backbone cache data frame should have columns 'uuid' and 'feat'."
@@ -696,6 +714,7 @@ class UuidSampler(Sampler[str]):
     ):
         """Wrap a Random, Sequential or Distributed sampler over the UUID list."""
         self.uuids = metadata._df.index.tolist()
+        # Pick order: distributed shard, random permutation (train) or sequential.
         if distributed:
             self.sampler = DistributedSampler(self.uuids, shuffle=shuffle)
         else:
@@ -747,6 +766,7 @@ def get_window_starts(
 
     """
     overflow_len = audio_len - inference_window_samples
+    # Fixed-position and random-position methods return start(s) directly.
     if method == "single_start":
         return 0
     if method == "single_random":
@@ -756,6 +776,7 @@ def get_window_starts(
             return [0, overflow_len]  # minimize overlap
         first = random.randint(0, audio_len - 2 * inference_window_samples)
         return [first, first + inference_window_samples]
+    # "all": evenly spaced starts, hop >= (1 - max overlap) * window; at least 1 window.
     if method == "all":
         min_hop_samples = int(
             (1 - max_inference_window_overlap_fraction) * inference_window_samples
@@ -806,14 +827,17 @@ def get_preprocessor_with_audio_normalization(
             pad_size = int(num_chunks * chunk_samples - len(audio))
             audio = torch.nn.functional.pad(audio, (0, pad_size))
 
+        # Window start sample(s) for this recording.
         window_starts = get_window_starts(
             window_method, len(audio), chunk_samples, max_overlap_frac
         )
 
+        # Wrap a bare int start (single_start / single_random) into a list.
         if isinstance(window_starts, Iterable):
             all_window_starts = window_starts
         else:
             all_window_starts = [window_starts]
+        # Slice each window from the waveform and run the preprocessor (e.g. log-mel).
         features = preprocessor(
             [
                 audio[start : start + chunk_samples].numpy(force=True)
@@ -823,11 +847,13 @@ def get_preprocessor_with_audio_normalization(
             sampling_rate=sampling_rate,
             do_normalize=normalize_features,
         )
+        # Unwrap the HF output object to the feature tensor.
         for key in ("input_features", "input_values"):
             if hasattr(features, key):
                 features = getattr(features, key)
                 break
 
+        # Shift each log-mel bin so its time-mean equals the ideal energy.
         if ideal_logmel_energies is not None:
             mean_features = torch.mean(features, dim=-1)
             # features are [batch, n_logmel_bins, n_frames]
@@ -894,6 +920,7 @@ def get_tokenizer(
         if hasattr(tokenizer, "prepare_for_tokenization"):
             text, _ = tokenizer.prepare_for_tokenization(text)
 
+        # Tokenize, padded/truncated to max_length (model max if None).
         tokenized = tokenizer(
             text,
             add_special_tokens=True,

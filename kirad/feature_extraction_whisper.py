@@ -67,12 +67,14 @@ class WhisperTorchFeatureExtractor(torch.nn.Module):
     ):
         """Precompute Hann window and Slaney mel filters; register the energy profile."""
         super().__init__()
+        # Store extractor settings and the Hann window used by the STFT.
         self.n_fft = n_fft
         self.hop_length = hop_length
         self.dither = dither
         self.normalize_audio = normalize_audio
         self.ideal_logmel_energies = ideal_logmel_energies
         self.window = torch.hann_window(self.n_fft)
+        # Slaney mel filter bank (201 FFT bins -> 80 mel bins) as a torch tensor.
         self.mel_filters = torch.from_numpy(
             mel_filter_bank(
                 num_frequency_bins=1 + n_fft // 2,
@@ -109,6 +111,7 @@ class WhisperTorchFeatureExtractor(torch.nn.Module):
                 waveform.shape, dtype=waveform.dtype, device=waveform.device
             )
 
+        # Complex STFT of each window (n_fft 400, hop 160).
         stft = torch.stft(
             waveform,
             self.n_fft,
@@ -116,10 +119,13 @@ class WhisperTorchFeatureExtractor(torch.nn.Module):
             window=self.window.to(waveform),
             return_complex=True,
         )
+        # Power spectrogram; drop the last frame so frames = T // 160.
         magnitudes = stft[..., :-1].abs() ** 2
 
+        # Project power onto the 80 mel filters -> [ΣW, 80, frames].
         mel_spec = self.mel_filters.to(magnitudes).T @ magnitudes
 
+        # Log10 with a floor, then clip to 8 below the max (per window when batched).
         log_spec = torch.clamp(mel_spec, min=1e-10).log10()
         if waveform.dim() == 2:
             max_val = log_spec.max(dim=2, keepdim=True)[0].max(dim=1, keepdim=True)[0]
@@ -149,8 +155,10 @@ class WhisperTorchFeatureExtractor(torch.nn.Module):
             batched_speech_double = (
                 batched_speech_double - batched_speech_double.mean(dim=1, keepdim=True)
             ) / torch.sqrt(batched_speech_double.var(dim=1, keepdim=True) + 1e-7)
+        # Log-mel features [ΣW, 80, 3000] (waveform normalized first if enabled).
         features = self._torch_extract_fbank_features(batched_speech_double)
 
+        # Shift each mel bin's time-mean to the IDEAL_LOGMEL_ENERGIES target.
         if self.ideal_logmel_energies:
             features += self.ideal_logmel_energies_stats.to(features)[
                 None, :, None

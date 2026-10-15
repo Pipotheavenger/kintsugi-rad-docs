@@ -27,14 +27,17 @@ class CORALLoss(pl.LightningModule):
         weights come from loss_target_cutoffs (all 1.0 for "exact28"/"exact22"); default all 1.0.
         """
         super().__init__(*args, **kwargs)
+        # Per-cutoff weights (default all 1.0); need one per cutoff (num_classes - 1).
         self.weights = weights or [1.0 for _ in range(num_classes - 1)]
         if len(self.weights) != num_classes - 1:
             raise ValueError(
                 f"Got {weights=} with {len(weights)=}; expected len(weights)={num_classes-1=}."
             )
+        # Learned bias b_k per cutoff, initialised at 0.
         self.biases = torch.nn.Parameter(
             torch.zeros(len(self.weights), dtype=torch.float)
         )
+        # Unreduced BCE on logits so forward can weight each cutoff.
         self.loss = torch.nn.BCEWithLogitsLoss(reduction="none")
 
     def forward(self, x, y):
@@ -43,12 +46,15 @@ class CORALLoss(pl.LightningModule):
         Shapes: x [N, 1] score, y [N] integer label -> [N] loss per sample (not averaged).
         Note: sum over cutoffs, not mean; the caller averages over samples.
         """
+        # Add the biases to the score: [N, 1] + [K] -> logits [N, K].
         x_plus_biases = x + self.biases
         weights = torch.tensor(self.weights, device=y.device)
+        # Thermometer code: column k is True when y > k -> [N, K].
         y_thermometer_code = torch.gt(
             y[..., None],
             torch.arange(len(self.weights), dtype=torch.int, device=y.device),
         )
+        # BCE per cutoff, weighted and summed over cutoffs -> [N].
         return torch.matmul(
             self.loss(input=x_plus_biases, target=y_thermometer_code.float()), weights
         )

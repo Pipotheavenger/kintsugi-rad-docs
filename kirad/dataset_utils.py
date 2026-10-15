@@ -40,6 +40,7 @@ from .constants import (
     FeatureStoreBucket,
 )
 
+# Distribution of a column: values plus bin edges (numeric) or categories.
 DistributionData = namedtuple(
     "DistributionData", ["distribution", "bin_edges", "categories"]
 )
@@ -59,6 +60,7 @@ def load_dataset(
         return dataset
     elif dataset in typing.get_args(DatasetVersion):
         # User provided a dataset version
+        # Versioned datasets need sources, splits and a fold (except test) to pick CSVs.
         if (
             data_sources is None
             or dataset_splits is None
@@ -68,10 +70,12 @@ def load_dataset(
                 "To use a dataset from `kintsugi-ml-datasets`, pass in "
                 "`data_sources`, `dataset_splits`, and `dataset_fold`"
             )
+        # Normalize sources and splits to lists.
         if isinstance(data_sources, str) or not isinstance(data_sources, Iterable):
             data_sources = [data_sources]
         if isinstance(dataset_splits, str) or not isinstance(dataset_splits, Iterable):
             dataset_splits = [dataset_splits]
+        # Fetch split CSVs; concatenate each source/split's first DataFrame.
         full_dataset = load_dataset_version(
             dataset, data_sources, dataset_splits, dataset_fold
         )
@@ -107,6 +111,7 @@ def load_relative_dataset(
         audio_root = dataset.get("audio_root", audio_root)
         text_root = dataset.get("text_root", text_root)
         dataset = dataset["metadata"]
+    # Load metadata; roots default to the current directory.
     df = load_dataset(dataset, data_sources, dataset_splits, dataset_fold)
     audio_root = audio_root or os.getcwd()
     text_root = text_root or os.getcwd()
@@ -131,6 +136,7 @@ def load_dataset_version(
     Returns {source: {split: [DataFrame per fold]}}; test has no folds.
     Hardcoded: METADATA_DIR/<version>/splits/<source>.<split>.fold_<k>.csv (test: no fold suffix).
     """
+    # Validate the version against constants.py.
     if dataset_version not in typing.get_args(DatasetVersion):
         raise ValueError(
             f"Dataset version {dataset_version} is not registered kirad/constants.py."
@@ -141,6 +147,7 @@ def load_dataset_version(
             "kirad/constants.py."
         )
 
+    # Normalize to lists; sources/splits: None or "all" = every one; folds: None = all.
     if data_sources is None or data_sources == "all" or "all" in data_sources:
         data_sources = [i for i in typing.get_args(DataSource) if i != "all"]
     elif isinstance(data_sources, str) or not isinstance(data_sources, Iterable):
@@ -164,8 +171,10 @@ def load_dataset_version(
     dir_exists = out_dir.exists()
     if not dir_exists:
         out_dir.mkdir(parents=True)
+    # Detect a read-only disk (no download possible).
     stat = os.statvfs(out_dir)
     read_only = bool(stat.f_flag & os.ST_RDONLY)
+    # Download only into a new writable dir; otherwise reuse the local copy.
     if not dir_exists and not read_only:
         if DATASET_VERSION_METADATA[dataset_version]["uri"] is None:
             raise ValueError(
@@ -180,6 +189,7 @@ def load_dataset_version(
             DATASET_VERSION_METADATA[dataset_version]["uri"],
             out_dir,
         ]
+        # Run the rsync, logging gsutil output on failure.
         try:
             subprocess.check_output(
                 cmd, stderr=subprocess.STDOUT, universal_newlines=True
@@ -196,13 +206,16 @@ def load_dataset_version(
     # Gather the data across the data source and splits
     full_dataset = dict()
     for data_source in data_sources:
+        # One list of DataFrames per split (train/val: one per fold).
         full_dataset[data_source] = {"train": [], "val": [], "test": []}
         for dataset_split in dataset_splits:
+            # Test has a single file with no fold suffix.
             if dataset_split == "test":
                 dataset_fold_strs = [""]
             else:
                 # Train and val splits
                 dataset_fold_strs = [f".fold_{fold}" for fold in dataset_folds]
+            # Read each CSV, drop duplicate recordings, tag split; skip missing files.
             for fold_str in dataset_fold_strs:
                 data_csv = (
                     out_dir / "splits" / f"{data_source}.{dataset_split}{fold_str}.csv"
@@ -225,6 +238,7 @@ def resolve_audio_path(
     force_download: bool = False,
 ) -> Path:
     """Return a local audio directory: a given path, or a synced feature-store bucket."""
+    # Bucket name -> synced local folder; any other value is treated as a path.
     if audio_dir_or_feature_store_bucket in typing.get_args(FeatureStoreBucket):
         return resolve_audio_path_from_bucket(
             audio_dir_or_feature_store_bucket,
@@ -252,16 +266,19 @@ def resolve_audio_path_from_bucket(
         )
 
     audio_dir = get_cache_dir(feature_store_bucket)
+    # Download only when not cached locally (or when forced).
     if not audio_dir.exists() or force_download:
         if FEATURE_STORE_URI is None:
             raise ValueError("Need to define URI for `FEATURE_STORE_URI`.")
         if RAW_AUDIO_URI is None:
             raise ValueError("Need to define URI for `RAW_AUDIO_URI`.")
+        # Raw audio has its own URI; processed features live under one per bucket.
         download_uri = (
             RAW_AUDIO_URI
             if is_raw_audio
             else f"{FEATURE_STORE_URI}/{feature_store_bucket}"
         )
+        # Create the local dir and sync the bucket into it.
         audio_dir.mkdir(parents=True, exist_ok=True)
         cmd = ["gsutil", "-m", "rsync", "-r", download_uri, audio_dir]
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, universal_newlines=True)
@@ -271,6 +288,7 @@ def resolve_audio_path_from_bucket(
 
 def get_cache_dir(location: FeatureStoreBucket | str | Path) -> Path:
     """Local directory for a bucket name (AUDIO_DIR/<bucket>) or a given path."""
+    # Bucket name -> AUDIO_DIR/<bucket>; any other value is treated as a path.
     if location in typing.get_args(FeatureStoreBucket):
         return AUDIO_DIR / location
     elif isinstance(location, str | Path):
@@ -337,6 +355,7 @@ def calculate_distributions(
         min_length = 0
     else:
         min_length = len(existing_label_distribution.categories)
+    # Class counts as probabilities, padded to the existing category count.
     count = np.bincount(df[label_column], minlength=min_length)
     distribution = count / np.sum(count)
     categories = list(range(len(count)))
@@ -350,6 +369,7 @@ def calculate_distributions(
             data = df[column].dropna()
             data_type = get_data_type(data)
             if data_type == "numerical":
+                # Numerical: density histogram, reusing existing bin edges when given.
                 if (
                     existing_other_distributions is not None
                     and column in existing_other_distributions
@@ -360,6 +380,7 @@ def calculate_distributions(
                 hist, bin_edges = np.histogram(data, bins=bins, density=True)
                 other_distributions[column] = DistributionData(hist, bin_edges, None)
             elif data_type == "categorical":
+                # Categorical: mass per category, reusing existing categories.
                 counts_obj = data.value_counts()
                 if (
                     existing_other_distributions is not None
@@ -516,6 +537,7 @@ def split_dataset(
     all_dataset_reps = []
     for rep in range(num_repetitions):
         seed = random_state + rep if random_state is not None else None
+        # K-fold or single proportion split, never sharing a speaker across sides.
         if split_type == "k_fold":
             splitter = StratifiedGroupKFold(
                 n_splits=n_splits, shuffle=True, random_state=seed
@@ -524,6 +546,7 @@ def split_dataset(
             splitter = GroupShuffleSplit(
                 n_splits=n_splits, test_size=test_size, random_state=seed
             )
+        # Collect (train, test) per fold, re-adding any previous data.
         dataset_folds = []
         for fold, (train_idx, test_idx) in enumerate(
             splitter.split(
@@ -553,6 +576,7 @@ def split_dataset(
         else:
             other_columns = None
 
+        # Summed KL (train + test, all folds) of each repetition vs. the supplied ones.
         kl_divergences = []
         for rep in range(num_repetitions):
             divergence = 0
@@ -585,11 +609,13 @@ def split_dataset(
                                 other_distributions[column].distribution,
                             )
             kl_divergences.append(divergence)
+        # Keep the repetition with the lowest KL.
         sorted_dataset_reps = sorted(
             list(zip(all_dataset_reps, kl_divergences)), key=lambda x: x[1]
         )
         best_dataset_rep = sorted_dataset_reps[0][0]  # keep the best repetition
 
+    # Unzip the (train, test) pairs into two lists of folds.
     train_folds, test_folds = zip(*best_dataset_rep)
     train_folds = list(train_folds)
     test_folds = list(test_folds)
@@ -657,6 +683,7 @@ def merge_df_rows_by_subject(df):
         "source",
         "pmi_score",
     ]
+    # Add the PHQ-9 / GAD-7 item columns, and `real` when present.
     common_cols.extend([f"phq{i}" for i in range(1, 10)])
     common_cols.extend([f"gad{i}" for i in range(1, 8)])
     if "real" in df.columns:
@@ -681,11 +708,14 @@ def merge_df_rows_by_subject(df):
     ]
     # If KD targets are provided, output the mean of the provided targets
     mean_cols = [c for c in df.columns if c.startswith("scores")]
+    # Keep only the columns that exist in this CSV.
     common_cols = [c for c in common_cols if c in df.columns]
     list_cols = [c for c in list_cols if c in df.columns]
     sum_cols = [c for c in sum_cols if c in df.columns]
+    # Fill missing prompts with ''.
     if "prompt" in df.columns:
         df["prompt"] = df["prompt"].fillna("")
+    # Group by subject: sum durations, average scores, collect list_cols into lists.
     groupby = df.groupby(common_cols, dropna=False)
     agg = groupby[sum_cols].sum()
     agg = agg.join(groupby[mean_cols].mean())
@@ -706,6 +736,7 @@ def repeat_along_batch_dim(
 ) -> torch.Tensor | Mapping[str, torch.Tensor]:
     """Tile a tensor (or dict of tensors) `repetitions` times along dim 0."""
     if isinstance(data, torch.Tensor):
+        # Repeat along dim 0 only.
         repeats = [repetitions] + [1 for _ in range(0, data.dim() - 1)]
         return data.repeat(*repeats)
     elif isinstance(data, Mapping):
@@ -742,6 +773,7 @@ def broadcast_along_batch_dim(data: Any) -> tuple[Any, int]:
 
     def max_batch_dim(data) -> int:
         """Largest dim 0 among all nested tensors."""
+        # Recurse through dicts/lists down to tensors; keep the largest dim 0.
         if isinstance(data, torch.Tensor):
             return data.shape[0]
         if isinstance(data, Mapping):
@@ -755,6 +787,7 @@ def broadcast_along_batch_dim(data: Any) -> tuple[Any, int]:
 
     def broadcast_to(data, length):
         """Repeat each nested tensor along dim 0 to `length`; must divide evenly."""
+        # Repeat each tensor along dim 0 to `length` (must divide); recurse into dicts.
         if isinstance(data, torch.Tensor):
             batch_dim = data.shape[0]
             repetitions, remainder = divmod(length, batch_dim)
@@ -769,6 +802,7 @@ def broadcast_along_batch_dim(data: Any) -> tuple[Any, int]:
         if isinstance(data, Iterable):
             return [broadcast_to(d, length) for d in data]
 
+    # Target length W = largest dim 0 among the tensors.
     length = max_batch_dim(data)
     return broadcast_to(data, length), length
 
@@ -782,6 +816,7 @@ def get_collate_fn(tensor_collate_fn: Callable[[list[torch.Tensor]], torch.Tenso
         """Apply tensor_collate_fn to a list of tensors."""
         return tensor_collate_fn(batch)
 
+    # Replace torch's default tensor collate with the custom one.
     collate_fn_map = copy.copy(default_collate_fn_map)
     collate_fn_map[torch.Tensor] = tensor_collate_tensor_fn
     return partial(collate, collate_fn_map=collate_fn_map)
@@ -819,6 +854,7 @@ def broadcast_collate(batch: list[Mapping[str, Any]]) -> dict[str, Any]:
         out = {
             **batch["metadata"]
         }  # contains DatasetFields.UUID and DatasetFields.LABEL
+        # Tile all modality features to the same W and store it as length.
         modality_data = {key: val for key, val in batch.items() if key != "metadata"}
         modality_data_broadcast, length = broadcast_along_batch_dim(modality_data)
         out[DatasetFields.LENGTH] = length
@@ -826,4 +862,5 @@ def broadcast_collate(batch: list[Mapping[str, Any]]) -> dict[str, Any]:
 
         return out
 
+    # Concat windows of all recordings -> [ΣW, ...]; length stays [B].
     return concat_collate(list(map(broadcast_desired, batch)))

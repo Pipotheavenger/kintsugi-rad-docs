@@ -34,7 +34,9 @@ from kirad.launcher_utils import (
 )
 from kirad.utils import cache_backbone, get_package_info, get_package_path
 
+# Pair of the parsed LauncherConfig and the rank-0-only W&B logger.
 LauncherParams = namedtuple("LauncherParams", ["launcher_config", "launcher_logger"])
+# Valid modes accepted by the CLI and launcher().
 Modes = Literal["train", "evaluate", "cache", "compile"]
 
 
@@ -48,18 +50,22 @@ def launcher(
     Builds config, callbacks and Trainer (GPU fp16 or CPU fp32, DDP), then dispatches.
     Note: training_examples_per_eval must be a multiple of the global batch size.
     """
+    # Reject unknown modes before any setup.
     if mode not in typing.get_args(Modes):
         raise ValueError(
             f"Unrecognized mode {mode}. Valid modes are: {typing.get_args(Modes)}."
         )
+    # Build config + logger and callbacks, then log run metadata to W&B.
     params = _setup_launcher(config, experiment_dir)
     callbacks = _setup_callbacks(params.launcher_config)
     _log_to_wandb(*params)
 
+    # Device count and eval cadence come from the config's training params.
     num_gpus = params.launcher_config.num_gpus
     training_params = params.launcher_config.training_params
     training_examples_per_eval = training_params.training_examples_per_eval
 
+    # Validation cadence: every epoch, or every N examples (converted to batches).
     if training_examples_per_eval is None:
         val_args = dict(check_val_every_n_epoch=1, val_check_interval=None)
     elif training_examples_per_eval % training_params._global_batch_size != 0:
@@ -75,6 +81,7 @@ def launcher(
             // training_params._global_batch_size,
         )
 
+    # Trainer: GPU/CPU, multi-node DDP, grad accumulation, cadence from above.
     trainer = Trainer(
         accelerator="gpu" if num_gpus > 0 else "cpu",
         num_nodes=int(os.environ.get("NUM_NODES", 1)),
@@ -94,6 +101,7 @@ def launcher(
         **val_args,
     )
 
+    # Dispatch to the requested mode; compile does not use the Trainer.
     if mode == "train":
         run_training(trainer, params.launcher_config)
     elif mode == "evaluate":
@@ -103,15 +111,18 @@ def launcher(
     elif mode == "compile":
         run_compilation(params.launcher_config)
 
+    # Log the metadata tables of the splits actually used.
     if mode != "compile":
         _log_datasets_to_wandb(*params)
 
 
 def run_training(trainer: Trainer, launcher_config: LauncherConfig):
     """Fit on train/val, reload the best checkpoint, then test it on the test split."""
+    # One loader per split; only train is in training mode.
     train_loader = launcher_config.get_data_loader("train", training_mode=True)
     val_loader = launcher_config.get_data_loader("val", training_mode=False)
     test_loader = launcher_config.get_data_loader("test", training_mode=False)
+    # Fit on train, validating on val; optionally resume a saved training state.
     trainer.fit(
         launcher_config.model,
         train_loader,
@@ -120,6 +131,7 @@ def run_training(trainer: Trainer, launcher_config: LauncherConfig):
     )
 
     #
+    # Load the best checkpoint's weights, then evaluate on the test split.
     launcher_config.model.load_state_dict(
         torch.load(trainer.checkpoint_callback.best_model_path)["state_dict"]
     )
@@ -131,6 +143,7 @@ def run_evaluation(trainer: Trainer, launcher_config: LauncherConfig):
     if launcher_config.model_params.ckpt_path == "":
         raise ValueError("Need to set a checkpoint path (`ckpt_path`) for evaluation.")
 
+    # Run the test split with the checkpointed model.
     test_loader = launcher_config.get_data_loader("test", training_mode=False)
     trainer.test(
         launcher_config.model,
@@ -153,6 +166,7 @@ def _setup_launcher(
         and int(os.environ.get("LOCAL_RANK", 0)) == 0
     )
 
+    # Parse the YAML into the model + data config.
     launcher_config = LauncherConfig(config, experiment_dir)
     # HARDCODED: W&B entity/project are None, so every run raises until you set them.
     wandb_entity = None
@@ -161,6 +175,7 @@ def _setup_launcher(
         raise ValueError("Need to define `wandb_entity`.")
     if wandb_project is None:
         raise ValueError("Need to define `wandb_project`.")
+    # Only rank 0 gets a logger; other ranks get None.
     launcher_logger = (
         LauncherLogger("./logs", launcher_config.config, wandb_entity, wandb_project)
         if is_init_logger
@@ -178,6 +193,7 @@ def _setup_callbacks(launcher_config: LauncherConfig) -> list[pl.callbacks.Callb
 
     Hardcoded: keeps top-1 + last.ckpt in chkpts/<experiment_name>/ (/mnt/chkpts on k8s).
     """
+    # Split monitor_loss 'mode:metric' into direction (min/max) and metric name.
     (
         monitor_loss_mode,
         monitor_loss_name,
@@ -185,6 +201,7 @@ def _setup_callbacks(launcher_config: LauncherConfig) -> list[pl.callbacks.Callb
     # on Kubernetes space on OS disk can be low so store checkpoints to the external disk
     # HARDCODED: checkpoint root; /mnt/chkpts when JOB_NAME (Kubernetes) is set.
     chkpt_dir = "/mnt/chkpts" if "JOB_NAME" in os.environ else "chkpts"
+    # Keep only the best checkpoint by the monitored metric, plus last.ckpt.
     checkpoint_callback = DistributedModelCheckpoint(
         dirpath=f"{chkpt_dir}/{launcher_config.experiment_name}/",
         filename="epoch-{epoch}_metric-{monitor_loss_name:.3f}",
@@ -199,6 +216,7 @@ def _setup_callbacks(launcher_config: LauncherConfig) -> list[pl.callbacks.Callb
 
     lr_monitor = LearningRateMonitor(logging_interval="step")
 
+    # Stop when the monitored metric has not improved for `patience` evals.
     early_stopping = EarlyStopping(
         monitor=monitor_loss_name,
         mode=monitor_loss_mode,
@@ -220,6 +238,7 @@ def _log_to_wandb(launcher_config: LauncherConfig, launcher_logger: LauncherLogg
     if launcher_logger is not None:
         # Log the code
         launcher_logger.log_code(launcher_config.experiment_dir, "source-experiment")
+        # The kirad source is optional; warn instead of failing if it can't be found.
         try:
             kintsugi_rad_path = get_package_path("kirad")
             launcher_logger.log_code(kintsugi_rad_path / "kirad", "source-kirad")
@@ -244,6 +263,7 @@ def _log_to_wandb(launcher_config: LauncherConfig, launcher_logger: LauncherLogg
         # Log ideal logmel energies, if specified
         if "audio" in launcher_config.modality_params:
             modality_params = launcher_config.modality_params["audio"]
+            # Log ideal log-mel energies of the first split that defines them.
             for split in ["train", "val", "test"]:
                 if (
                     split in modality_params
@@ -270,6 +290,7 @@ def _log_datasets_to_wandb(
     if launcher_logger is not None:
         # Log dataset splits that were used
         used_datasets = dict()
+        # Metadata dataframe of each split, keyed '<split>_dataset'.
         for split, dataset in launcher_config.dataset.items():
             used_datasets.update({f"{split}_dataset": dataset.datasets["metadata"]._df})
         launcher_logger.log_table_artifacts({"dataset": used_datasets})
@@ -285,6 +306,7 @@ def run_caching(
     # prohibit running caching if cache is set
     assert "backbone_cache" not in launcher_config.config["data_params"]
 
+    # Collect dataset and loader kwargs (eval mode) for each split.
     datasets, data_loader_args = [], []
     for split in ["train", "val", "test"]:
         datasets.append(launcher_config.get_dataset(split))
@@ -311,9 +333,10 @@ def run_caching(
     for dataset, arg in zip(datasets, data_loader_args):
         arg["sampler"] = UuidSampler(dataset.datasets["metadata"], distributed=True)
 
-    #
+    # Move the model to this rank's GPU in eval mode.
     launcher_config.model.cuda(torch.distributed.get_rank()).eval()
 
+    # Save backbone weights and cache its features for all splits to W&B.
     state_dict = launcher_config.model.backbone.state_dict(prefix="backbone.")
     cache_backbone(
         launcher_config.model.compute_features_to_cache,
@@ -338,6 +361,7 @@ def run_compilation(launcher_config: LauncherConfig):
     sample_input = ({"audio": batch["features"]["audio"][:1, ...]}, [1])
 
     #
+    # Export in eval mode, using the one-window sample as the example input.
     launcher_config.model.eval()
     model_compiled = torch.export.export(launcher_config.model, sample_input)
 
@@ -349,6 +373,7 @@ def run_compilation(launcher_config: LauncherConfig):
             raise ValueError("Computation results don't match")
 
     #
+    # Save the .pt2 in a temp dir, upload as a W&B model artifact, then clean up.
     temp_dir = tempfile.mkdtemp()
     path = os.path.join(temp_dir, "model.pt2")
 
@@ -404,14 +429,17 @@ def setup_multi_node_environment():
     from kubernetes import client, config
 
     #
+    # Use the pod's in-cluster credentials to query the Kubernetes API.
     config.load_incluster_config()
     core_v1 = client.CoreV1Api()
 
     #
+    # Job name and expected pod count come from the environment.
     job_name = os.environ["JOB_NAME"]
     num_nodes = int(os.environ.get("NUM_NODES", 1))
 
     #
+    # Poll until every pod has an IP; abort after the timeout.
     start_time = time.time()
     while True:
 
@@ -421,6 +449,7 @@ def setup_multi_node_environment():
             namespace="default", label_selector=f"job-name={job_name}"
         )
 
+        # Pods that already have an IP count as started.
         active_nodes = sum(pod.status.pod_ip is not None for pod in pods.items)
         if active_nodes == num_nodes:
             break

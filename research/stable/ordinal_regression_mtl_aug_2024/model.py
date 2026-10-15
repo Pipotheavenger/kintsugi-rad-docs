@@ -51,6 +51,7 @@ class WhisperLLMA(pl.LightningModule):
         """
         super().__init__()
 
+        # Whisper encoder that learns to predict the cached text embedding.
         self.backbone = nn.ModuleDict(
             {
                 "llma": WhisperBackbone(**whisper_config),
@@ -103,13 +104,16 @@ class WhisperLLMA(pl.LightningModule):
 
         Logged as metrics/<split>/total_loss (no thresholds or Sn/Sp in this phase).
         """
+        # Log-mel windows and per-recording window counts from the batch.
         x = batch[DatasetFields.FEATURES]
         lengths = batch[DatasetFields.LENGTH]
 
+        # Audio embedding vs projected cached text embedding (the teacher).
         pred = self.forward(x, lengths)
         ground_truth = self.forward_ground_truth(x, lengths)
         total_loss = F.mse_loss(pred, ground_truth)
 
+        # Log the epoch-level loss, synced across devices.
         self.log(
             f"metrics/{split}/total_loss",
             total_loss,
@@ -123,6 +127,7 @@ class WhisperLLMA(pl.LightningModule):
         """AdamW on the Whisper backbone only (optimizer["backbone"]) with MultiStepLR."""
         if self.training_params is None:
             return None
+        # One param group: the Whisper backbone only.
         optimizer = torch.optim.AdamW(
             [
                 {
@@ -135,6 +140,7 @@ class WhisperLLMA(pl.LightningModule):
                 },
             ]
         )
+        # Multi-step LR decay from the config.
         scheduler = MultiStepLR(
             optimizer, **self.training_params.scheduler.model_dump()
         )
@@ -163,6 +169,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
         llma_ckpt is a W&B artifact URL; the LLMA config is read from that run's config.
         Head input dim = 768 (audio) + 768 (LLMA).
         """
+        # One CORAL OrdinalRegressionPLModule per task, with cutoffs and loss weights.
         task_modules = {
             task: OrdinalRegressionPLModule(
                 num_classes=task_config["num_classes"],
@@ -184,6 +191,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
         }
         super().__init__(task_modules)
 
+        # Audio Whisper backbone (kept frozen: forward_backbone runs it under no_grad).
         self.backbone = nn.ModuleDict(
             {
                 "audio": WhisperBackbone(**whisper_config),
@@ -198,6 +206,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
         )
         self.llma.load_state_dict(torch.load(ckpt)["state_dict"], strict=True)
 
+        # Head input = audio + LLMA embeddings concatenated (768 + 768).
         backbone_dim = self.backbone["audio"].backbone_dim + self.llma.backbone_dim
         self.head = MultitaskHead(backbone_dim, **classifier_config)
 
@@ -215,9 +224,11 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
         Both backbones are frozen here (torch.no_grad, and not in the optimizer).
         With cached_backbone, returns x["backbone_cache"] unchanged.
         """
+        # Cached path: reuse precomputed embeddings.
         if self.cached_backbone:
             return x["backbone_cache"], lengths
         else:
+            # Frozen: audio embedding averaged per recording, plus LLMA embedding.
             with torch.no_grad():
                 audio_output = self.backbone["audio"](x)
                 audio_output = average_tensor_in_segments(audio_output, lengths)
@@ -236,6 +247,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
         """AdamW on head + CORAL biases only (backbones frozen), with MultiStepLR."""
         if self.training_params is None:
             return None
+        # One param group: head + CORAL biases; backbones are frozen.
         optimizer = torch.optim.AdamW(
             [
                 {
@@ -251,6 +263,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
                 },
             ]
         )
+        # Multi-step LR decay from the config.
         scheduler = MultiStepLR(
             optimizer, **self.training_params.scheduler.model_dump()
         )

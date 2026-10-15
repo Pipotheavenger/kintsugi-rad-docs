@@ -43,6 +43,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
 
         Tasks come from training_params.tasks; cutoffs from kirad/constants.py.
         """
+        # One CORAL OrdinalRegressionPLModule per task, with cutoffs and loss weights.
         task_modules = {
             task: OrdinalRegressionPLModule(
                 num_classes=task_config["num_classes"],
@@ -63,6 +64,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
             for task, task_config in training_params.tasks.items()
         }
         super().__init__(task_modules)
+        # Fill Whisper config defaults and compute the padded window length in samples.
         whisper_config = whisper_config or {}
         whisper_config.setdefault("hf_config", {})
         # HARDCODED: 1500 encoder positions = 30 s windows (Whisper default)
@@ -71,6 +73,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
         # HARDCODED: 320 samples per encoder position (hop 160 x conv stride 2 at 16 kHz);
         # 1500 x 320 = 480,000 samples = 30 s. Audio is assumed 16 kHz, never resampled.
         self.padding = whisper_config["hf_config"]["max_source_positions"] * 320
+        # Build the log-mel extractor, Whisper backbone and head sized to its embedding.
         self.feature_extractor = WhisperTorchFeatureExtractor(**featex_config)
         self.backbone = WhisperBackbone(**whisper_config)
         self.head = MultitaskHead(self.backbone.backbone_dim, **classifier_config)
@@ -92,6 +95,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
         if self.cached_backbone:
             return x["backbone_cache"], lengths
         else:
+            # Pad windows to self.padding samples (30 s), then log-mel + encoder.
             audio = x["audio"]
             audio = torch.nn.functional.pad(audio, (0, self.padding - audio.shape[-1]))
             return self.backbone({"audio": self.feature_extractor(audio)}), lengths
@@ -109,6 +113,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
         """
         if self.training_params is None:
             return None
+        # Two param groups: backbone, and head + CORAL biases, each with its own lr.
         optimizer = torch.optim.AdamW(
             [
                 {
@@ -132,6 +137,7 @@ class DepAnxClassifier(MultiTaskOrdinalRegressionPLModule):
                 },
             ]
         )
+        # Multi-step LR decay from the config.
         scheduler = MultiStepLR(
             optimizer, **self.training_params.scheduler.model_dump()
         )

@@ -27,6 +27,7 @@ def plot_indeterminate_analysis(
     show: Whether to show the plots; set to False for non-interactive workflows.
 
     """
+    # Build one IndetSnSpArray per binary cut `task > i`, for i in 0..max label - 1.
     indet_sn_sp_arrays = dict()
     labels = df[f"quantized_labels_{task}"]
     scores = df[f"scores_{task}"]
@@ -35,6 +36,7 @@ def plot_indeterminate_analysis(
             y_true=(labels > i).astype(int), y_score=scores
         )
 
+    # Fig 0: lower/upper thresholds vs budget; fig 1: Sn=Sp vs budget; one line per cut.
     for i, indet_sn_sp_array in indet_sn_sp_arrays.items():
         sn_eq_sp = indet_sn_sp_array.sn_eq_sp_graph()
         plt.figure(0)
@@ -49,6 +51,7 @@ def plot_indeterminate_analysis(
             label=f"{task}>{i}",
         )
 
+    # Label and decorate the thresholds figure (fig 0).
     plt.figure(0)
     plt.grid(True)
     plt.legend()
@@ -56,6 +59,7 @@ def plot_indeterminate_analysis(
     plt.ylabel("Thresholds to achieve optimal Sn=Sp given budget")
     plt.title("Upper and lower indeterminacy thresholds as a function of budget")
 
+    # Label and decorate the Sn=Sp figure (fig 1).
     plt.figure(1)
     plt.grid(True)
     plt.legend()
@@ -63,6 +67,7 @@ def plot_indeterminate_analysis(
     plt.ylabel("Sn = Sp")
     plt.title("Sn=Sp as a function of indeterminate budget")
 
+    # One ROC figure per cut, with one curve per indeterminate budget.
     for i, indet_sn_sp_array in indet_sn_sp_arrays.items():
         plt.figure()
         for budget in np.linspace(0.0, 0.7, 8):  # HARDCODED: ROC budgets 0%..70%, step 10%
@@ -77,5 +82,6 @@ def plot_indeterminate_analysis(
         plt.grid(True)
         plt.gca().set_aspect("equal")
 
+    # Display all figures unless running non-interactively.
     if show:
         plt.show()

@@ -35,24 +35,30 @@ def genNotchCoeffs(
     nBands, minF, maxF, minBW, maxBW, minCoeff, maxCoeff, minG, maxG, fs
 ):
     """Random FIR filter: cascade of nBands random notch (band-stop) filters, random gain."""
+    # Cascade nBands random notch filters by convolving their impulse responses.
     b = 1
     for i in range(0, nBands):
+        # Random centre frequency, bandwidth and tap count for this notch.
         fc = randRange(minF, maxF, 0)
         bw = randRange(minBW, maxBW, 0)
         c = randRange(minCoeff, maxCoeff, 1)
 
+        # Tap count must be odd for a band-stop FIR.
         if c / 2 == int(c / 2):
             c = c + 1
+        # Band edges around fc, clamped inside (0, Nyquist).
         f1 = fc - bw / 2
         f2 = fc + bw / 2
         if f1 <= 0:
             f1 = 1 / 1000
         if f2 >= fs / 2:
             f2 = fs / 2 - 1 / 1000
+        # Design the band-stop FIR and fold it into the cascade.
         b = np.convolve(
             signal.firwin(c, [float(f1), float(f2)], window="hamming", fs=fs), b
         )
 
+    # Normalize peak frequency response to 1, then apply random gain G (dB).
     G = randRange(minG, maxG, 0)
     _, h = signal.freqz(b, 1, fs=fs)
     b = pow(10, G / 20) * b / np.amax(abs(h))
@@ -87,7 +93,9 @@ def LnL_convolutive_noise(
 ):
     """LnL: sum of random FIR-filtered powers x, x^2, ..., x^N_f (channel distortion)."""
     y = [0] * x.shape[0]
+    # Sum FIR-filtered powers x^1..x^N_f of the signal.
     for i in range(0, N_f):
+        # From the 2nd power on, lower the gain range by the bias.
         if i == 1:
             minG = minG - minBiasLinNonLin
             maxG = maxG - maxBiasLinNonLin
@@ -95,6 +103,7 @@ def LnL_convolutive_noise(
             nBands, minF, maxF, minBW, maxBW, minCoeff, maxCoeff, minG, maxG, fs
         )
         y = y + filterFIR(np.power(x, (i + 1)), b)
+    # Remove DC offset and peak-normalize if above 1.
     y = y - np.mean(y)
     y = normWav(y, 0)
     return y
@@ -103,12 +112,15 @@ def LnL_convolutive_noise(
 # Impulsive signal dependent noise
 def ISD_additive_noise(x, P, g_sd):
     """ISD: perturb up to P% of random samples by signal-proportional impulsive noise."""
+    # Random percentage (up to P) of samples to corrupt.
     beta = randRange(0, P, 0)
 
+    # Pick random sample positions to perturb.
     y = copy.deepcopy(x)
     x_len = x.shape[0]
     n = int(x_len * (beta / 100))
     p = np.random.permutation(x_len)[:n]
+    # Impulsive noise g_sd * x * (u1 * u2), u in [-1, 1]; then peak-normalize.
     f_r = np.multiply(
         ((2 * np.random.rand(p.shape[0])) - 1), ((2 * np.random.rand(p.shape[0])) - 1)
     )
@@ -135,12 +147,14 @@ def SSI_additive_noise(
     fs,
 ):
     """SSI: add coloured Gaussian noise at a random SNR in [SNRmin, SNRmax] dB."""
+    # White Gaussian noise, coloured by a random notch FIR and peak-normalized.
     noise = np.random.normal(0, 1, x.shape[0])
     b = genNotchCoeffs(
         nBands, minF, maxF, minBW, maxBW, minCoeff, maxCoeff, minG, maxG, fs
     )
     noise = filterFIR(noise, b)
     noise = normWav(noise, 1)
+    # Scale noise to a random SNR (dB) relative to the signal energy.
     SNR = randRange(SNRmin, SNRmax, 0)
     noise = (
         noise / np.linalg.norm(noise, 2) * np.linalg.norm(x, 2) / 10.0 ** (0.05 * SNR)
@@ -199,6 +213,7 @@ class RawBoost:
         self.algo = algo
         self.fs = fs
 
+        # Notch-filter / LnL parameters.
         self.nBands = nBands
         self.minF = minF
         self.maxF = maxF
@@ -212,9 +227,11 @@ class RawBoost:
         self.maxBias = maxBiasLinNonLin
         self.N_f = N_f
 
+        # ISD parameters.
         self.P = P
         self.g_sd = g_sd
 
+        # SSI SNR range (dB).
         self.SNRmin = SNRmin
         self.SNRmax = SNRmax
 
@@ -224,6 +241,7 @@ class RawBoost:
         Note: calls x.numpy(), so x must be a CPU tensor.
         """
 
+        # Work in numpy on CPU; remember dtype/device to restore them at the end.
         orig_dtype, orig_device = x.dtype, x.device
         x = x.numpy()
 

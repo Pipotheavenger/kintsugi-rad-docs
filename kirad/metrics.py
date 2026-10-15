@@ -20,8 +20,10 @@ from typing_extensions import Self  # in typing in python3.11
 
 def pad_cat(tensors):
     """Zero-pad non-batch dims to the largest shape, then concat on dim 0 (DDP reduce)."""
+    # Largest size of each non-batch dim across all tensors.
     shapes = [torch.tensor(t.shape[1:]) for t in tensors]
     padded_shape = torch.stack(shapes, dim=0).max(dim=0).values
+    # Zero-pad every tensor's trailing dims up to that common size.
     padded_tensors = [
         torch.nn.functional.pad(
             t,
@@ -65,6 +67,7 @@ class MultiCatMetric(Metric):
         """
         super().__init__(**kwargs)
 
+        # One list state per tensor stream; pad_cat merges them across ranks.
         self.state_names = [f"state_{i}" for i in range(num_states)]
         for state_name in self.state_names:
             self.add_state(state_name, default=[], dist_reduce_fx=pad_cat)
@@ -80,6 +83,7 @@ class MultiCatMetric(Metric):
                 need not have the same dimensions or type.
 
         """
+        # All streams must be passed together on every update.
         if len(values) != len(self.state_names):
             raise ValueError(
                 f"Got {len(values)=}, which does not match num_states={len(self.state_names)}."
@@ -108,6 +112,7 @@ def running_argmax_indices(a):
     array([0, 2, 3, 6, 7])
 
     """
+    # Running maximum; a new record is where it strictly increases.
     m = np.maximum.accumulate(a)
     return np.flatnonzero(np.r_[True, m[:-1] < m[1:]])
 
@@ -131,6 +136,7 @@ def pareto_2d_indices(x, y):
     array([0, 6])
 
     """
+    # Sort by y desc (ties x desc); keep points that set an x record.
     sort_indices = np.lexsort((-x, -y))  # last element is primary sort key
     return sort_indices[running_argmax_indices(x[sort_indices])]
 
@@ -194,6 +200,7 @@ class IndetSnSpArray:
         pairs.
 
         """
+        # Default to unit weights and drop zero-weight samples.
         weights = weights if weights is not None else np.ones_like(y_true)
         y_true = y_true[weights > 0]
         y_score = y_score[weights > 0]
@@ -205,6 +212,7 @@ class IndetSnSpArray:
             lower_indices = np.searchsorted(threshes, lower_thresh)
             upper_indices = np.searchsorted(threshes, upper_thresh)
         else:
+            # Candidate cuts: the given set, else midpoints between unique scores.
             if lower_thresh is not None:
                 threshes = np.unique(np.r_[-np.inf, lower_thresh, np.inf])
             elif upper_thresh is not None:
@@ -212,12 +220,16 @@ class IndetSnSpArray:
             else:
                 unique_scores = np.unique(np.r_[-np.inf, y_score, np.inf])
                 threshes = (unique_scores[1:] + unique_scores[:-1]) / 2
+            # Every (lower <= upper) index pair into the candidate cuts.
             lower_indices, upper_indices = np.triu_indices(len(threshes))
 
+        # Weighted counts and positives in each bin between consecutive cuts.
         count_by_bin = np.histogram(y_score, bins=threshes, weights=weights)[0]
         pos_by_bin = np.histogram(y_score, bins=threshes, weights=y_true * weights)[0]
+        # Prefix sums: totals below each cut, with a leading 0.
         count_by_thresh = np.pad(np.cumsum(count_by_bin), (1, 0))
         pos_by_thresh = np.pad(np.cumsum(pos_by_bin), (1, 0))
+        # Below lower = negative, at/above upper = positive, between = indet.
         tn_plus_fn = count_by_thresh[lower_indices]
         total_minus_tp_minus_fp = count_by_thresh[upper_indices]
         tp_plus_fp = count_by_thresh[-1] - total_minus_tp_minus_fp
@@ -226,9 +238,11 @@ class IndetSnSpArray:
         tp = total_pos - pos_by_thresh[upper_indices]
         fp = tp_plus_fp - tp
         tn = tn_plus_fn - fn
+        # Sn and Sp; denominators floored by the smallest weight to avoid 0/0.
         min_weight = weights.min()
         sn = tp / np.maximum(tp + fn, min_weight)
         sp = tn / np.maximum(tn + fp, min_weight)
+        # Fail loudly if float error pushed Sn/Sp outside [0, 1].
         for name, value in (("sensitivity", sn), ("specificity", sp)):
             if value.max() > 1 + eps:
                 raise ValueError(
@@ -238,6 +252,7 @@ class IndetSnSpArray:
                 raise ValueError(
                     f"Numerical precision issues produced invalid value {name} = {value.min()}."
                 )
+        # Clip tiny overshoot; indet_frac = weight between the cuts / total.
         return cls(
             lower_thresh=threshes[lower_indices],
             upper_thresh=threshes[upper_indices],
@@ -282,6 +297,7 @@ class IndetSnSpArray:
         than the points on the curve in the sense of having worse Sn, worse Sp, or not meeting the indeterminate budget.
 
         """
+        # Keep pairs within the indet budget, then their Pareto (Sn, Sp) frontier.
         within_budget = self[self.indet_frac <= indet_budget]
         frontier = pareto_2d_indices(within_budget.sn, within_budget.sp)
         return IndetRocCurve(**asdict(within_budget[frontier]))
@@ -358,9 +374,11 @@ class IndetRocCurve(IndetSnSpArray):
 
         Build an indeterminate=0 ROC curve in n log n time (vs n**2 for IndetSnSpArray.build().roc_curve())."""
         if thresh is None:
+            # Default cuts: all score midpoints, descending so sn rises, sp falls.
             thresh = midpoints_with_infs(y_score)[
                 ::-1
             ]  # reverse for proper output sorting
+        # lower == upper cuts means no indeterminate band.
         issa = IndetSnSpArray.build(
             lower_thresh=thresh,
             upper_thresh=thresh,
@@ -410,6 +428,7 @@ def binary_indet_confusion_matrix(
 
     """
     y_true = y_true.astype(int)
+    # not_false: score >= low; indet: low <= score < high.
     not_false = np.greater_equal(scores, thresh_low)
     indet = np.logical_and(not_false, np.less(scores, thresh_high))
     # false -> 0, true -> 1, indet -> 2 (so it doesn't match anything in y_true)

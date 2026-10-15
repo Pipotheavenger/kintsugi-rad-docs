@@ -59,6 +59,7 @@ from .utils import (
     tensor_to_strs,
 )
 
+# Maps split name to the Lightning trainer attribute that holds its dataloader.
 DATA_LOADER_ATTR_NAMES = {
     "train": "train_dataloader",
     "val": "val_dataloaders",
@@ -132,16 +133,20 @@ class OrdinalRegressionPLModule(pl.LightningModule):
 
         """
         super().__init__()
+        # Normalize a plain list of cuts into {cut: '>cut'} names.
         if isinstance(metric_target_cutoffs, Sequence):
             metric_target_cutoffs = OrderedDict(
                 (i, f">{i}") for i in metric_target_cutoffs
             )
         self.metric_target_cutoff_names = metric_target_cutoffs
+        # CORAL loss, weighted only on the cutoffs listed in loss_target_cutoffs.
         self.loss = CORALLoss(
             num_classes=num_classes,
             weights=[float(i in loss_target_cutoffs) for i in range(num_classes - 1)],
         )
+        # Unreduced MSE per window for the knowledge-distillation term.
         self.kd_loss = nn.MSELoss(reduction="none")
+        # One threshold tuner per method; num_targets = number of output classes.
         num_targets = len(self.metric_target_cutoff_names) + 1
         self.thresholding = nn.ModuleDict(
             dict(
@@ -152,6 +157,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
                 macro_f1=MaxMacroF1OrdinalThresholding(num_targets),
             )
         )
+        # CORAL-derived thresholds, only if every metric cut is also a loss cut.
         try:
             metric_target_indices = [
                 loss_target_cutoffs.index(i) for i in self.metric_target_cutoff_names
@@ -164,6 +170,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
                 "Skipping CORAL-derived thresholding logic because metric_target_cutoffs are not all contained"
                 "in loss_target_cutoffs, so not all metric targets have a CORAL-learned threshold / bias."
             )
+        # One Sn=Sp / indeterminate-budget threshold buffer per binary cut.
         self.indet_thresholding = nn.ModuleDict(
             {
                 str(c_idx): IndetSnSpTensorModule()  # keys must be strings
@@ -174,6 +181,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         self.accumulators = nn.ModuleDict(
             {key: MultiCatMetric(4) for key in ("val", "test")}
         )
+        # Names, indet budget labels (e.g. '@40%i') and loss weights.
         self.loss_name = loss_name
         self.score_table_name = score_table_name
         self.indet_budget_names = {
@@ -190,8 +198,10 @@ class OrdinalRegressionPLModule(pl.LightningModule):
 
     def load_state_dict(self, state_dict, strict=True):
         """Resize indet-threshold buffers to the checkpoint's shapes, then load weights."""
+        # Accept a full Lightning checkpoint as well as a bare state dict.
         if "state_dict" in state_dict:
             state_dict = state_dict["state_dict"]
+        # Resize indet buffers to the checkpoint's shapes (their length varies).
         for c_idx in self.metric_target_cutoff_names:
             for k, v in self.indet_thresholding[str(c_idx)].named_buffers():
                 v.resize_(state_dict[f"indet_thresholding.{c_idx}.{k}"].shape)
@@ -229,6 +239,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         Returns the dict of logged metrics (keys bucketed_metrics/... and metrics/...).
         """
         # Log ordinal bucketed metrics
+        # Per-budget sums used for the macro averages over cuts.
         auroc_sum = {budget: 0.0 for budget in self.indet_budget_names}
         sn_eq_sp_sum = {budget: 0.0 for budget in self.indet_budget_names}
         sn_sum = {budget: 0.0 for budget in self.indet_budget_names}
@@ -237,6 +248,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         labels_numpy = labels.numpy(force=True)
         scores_numpy = scores.numpy(force=True)
         metrics = dict()
+        # Per binary cut and indet budget: AUROC and min(Sn, Sp) from the ROC curve.
         for c_idx, c_name in self.metric_target_cutoff_names.items():
             labels_2class = (labels_numpy > c_idx).astype(int)
             for indet_budget, indet_budget_str in self.indet_budget_names.items():
@@ -252,6 +264,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
                     f"bucketed_metrics/{split}/sn_eq_sp_{c_name}{indet_budget_str}"
                 ] = sn_eq_sp
 
+                # Test only: apply the Sn=Sp thresholds tuned on val to the test scores.
                 if split == "test":
                     try:
                         val_ops = IndetSnEqSpGraph(
@@ -307,6 +320,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         Also logs the cost of the best constant-output classifier as a baseline.
         """
         metrics = dict()
+        # Per DP-tuned method: baseline cost, then cost under every method's thresholds.
         for key1, value1 in self.thresholding.items():
             if isinstance(value1, OptimalOrdinalThresholdingViaDynamicProgramming):
                 metric_key = f"thresh_metrics/{split}/{key1}"
@@ -342,6 +356,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         task = self.score_table_name.split("-")[-1]
         # only do this for test because wandb doesn't give a good way to navigate val results by epoch at this time
         dfs = []
+        # Per cut: test Sn/Sp/indet fraction vs val budget, one W&B plot per metric.
         for c_idx in self.metric_target_cutoff_names:
             # evaluated test data on thresholds for val sn=sp as a function of indet budget
             sn_eq_sp_on_val = self.indet_thresholding[str(c_idx)].numpy()
@@ -371,6 +386,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
                         )
                     }
                 )
+        # Average the per-cut curves on a common budget grid and plot them.
         max_indet = min(df.indet_budget_val.max() for df in dfs)
         # HARDCODED: 1000 interpolation points
         indet_budget_val = np.linspace(0.0, max_indet, num=1000)
@@ -411,6 +427,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         builds one IndetSnSpArray per binary cut. Only on "val": tunes the six threshold
         methods and stores the Sn=Sp operating points; "test" reuses them.
         """
+        # Gather accumulated (uuid, score mean, variance, label) from all replicas.
         tensor_uuids, *rests = self.accumulators[split].compute()
         uuids = tensor_to_strs(tensor_uuids)
         # Deduplicate -- pytorch runs some items twice to keep all replicas busy
@@ -422,6 +439,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         self.accumulators[split].reset()
         quantized_labels = self.quantize_labels(labels)
 
+        # Rank 0: upload per-recording scores as a W&B artifact (not in sanity check).
         global_rank = (
             torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
         )
@@ -442,12 +460,14 @@ class OrdinalRegressionPLModule(pl.LightningModule):
             )
             artifact.add(table, "scores")
             wandb.run.log_artifact(artifact)
+        # Large sets: fixed 10,000-point threshold grid instead of every unique score.
         if scores.numel() > self.THRESH_LIM:
             threshes = np.linspace(
                 scores.min().cpu().numpy(), scores.max().cpu().numpy(), self.THRESH_LIM
             )
         else:
             threshes = None
+        # Per binary cut: Sn/Sp curves with an indeterminate zone.
         issas = {
             c_idx: IndetSnSpArray.build(
                 threshes,
@@ -457,6 +477,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
             for c_idx in self.metric_target_cutoff_names
         }
         sn_eq_sp_graphs = {key: value.sn_eq_sp_graph() for key, value in issas.items()}
+        # Val only: tune all threshold methods and store the Sn=Sp operating points.
         if split == "val":
             for method in self.thresholding.values():
                 method.tune_thresholds(scores=scores, labels=quantized_labels)
@@ -464,6 +485,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
                 self.indet_thresholding[str(c_idx)].update(
                     sn_eq_sp_graph, scores.device
                 )
+        # Test (rank 0): plot Sn/Sp/indet fraction vs budget at the val thresholds.
         if global_rank == 0 and not self.trainer.sanity_checking and split == "test":
             try:
                 self.log_test_indet_analysis(scores=scores, labels=labels)
@@ -486,22 +508,26 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         KD term only if the label dict has the KD field (teacher score per recording).
         Shapes: logits [ΣW, 1], y[PRIMARY] [B], lengths [B] -> scalar.
         """
+        # Per-recording mean and variance of window scores.
         logits_mean, logits_variance = average_and_variance_tensor_in_segments(
             logits, lengths
         )
 
+        # Optional teacher score (KD) and the primary label used by CORAL.
         try:
             y_kd = y[DatasetFields.LabelFields.KD].float()
         except KeyError:
             y_kd = None
         y = y[DatasetFields.LabelFields.PRIMARY]
 
+        # CORAL: loss of the recording mean, or per-window loss averaged per recording.
         y_broadcast = torch.repeat_interleave(y, repeats=lengths, dim=0)
         if self.mean_before_loss[split]:
             loss = self.loss(logits_mean, y)
         else:
             loss = average_tensor_in_segments(self.loss(logits, y_broadcast), lengths)
 
+        # Log the CORAL and score-variance terms.
         loss_mean = loss.mean()
         loss_variance_mean = logits_variance.mean()
         # include loss type in name of loss to avoid comparing different loss types in WandB
@@ -520,11 +546,13 @@ class OrdinalRegressionPLModule(pl.LightningModule):
             sync_dist=True,
         )
 
+        # Weighted sum of CORAL and score-variance terms.
         loss_mean = (
             self.coral_loss_weight * loss_mean
             + self.score_variance_loss_weight * loss_variance_mean
         )
 
+        # KD term: MSE of window scores vs teacher score, averaged per recording.
         if y_kd is not None:
             y_kd_broadcast = torch.repeat_interleave(y_kd, repeats=lengths, dim=0)
             loss_kd_by_chunk = self.kd_loss(logits, y_kd_broadcast[..., None])
@@ -547,6 +575,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
         Shapes: batch features -> forward -> [ΣW, 1]; accumulated per recording [B].
         """
         logits = self.forward(batch[DatasetFields.FEATURES])
+        # Val/test: accumulate uuid, per-recording score mean/variance and label.
         if split in self.accumulators:
             logits_mean, logits_var = average_and_variance_tensor_in_segments(
                 logits, batch[DatasetFields.LENGTH]
@@ -578,6 +607,7 @@ class OrdinalRegressionPLModule(pl.LightningModule):
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         """Per-recording score: forward, then mean over its windows. Shapes: [B, 1]."""
+        # Average the per-window scores into one score per recording.
         logits = average_tensor_in_segments(
             self.forward(batch[DatasetFields.FEATURES]),
             batch[DatasetFields.LENGTH],
@@ -603,6 +633,7 @@ class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
         """
         if "state_dict" in state_dict:
             state_dict = state_dict["state_dict"]
+        # Resize each task's indet buffers to the checkpoint's shapes.
         for task_name, task in self.tasks.items():
             for c_idx in task.metric_target_cutoff_names:
                 for k, v in task.indet_thresholding[str(c_idx)].named_buffers():
@@ -614,6 +645,7 @@ class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
                             raise KeyError(
                                 f"Missing {name} in state_dict with keys {list(state_dict.keys())}"
                             )
+        # Load, then report missing / unexpected keys.
         missing_keys, unexpected_keys = super().load_state_dict(state_dict, strict)
         if missing_keys:
             logger.info(
@@ -650,12 +682,15 @@ class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
 
         The combined metric (e.g. metrics/val/sn_eq_sp@0%i) drives checkpointing.
         """
+        # Each task runs its epoch end and returns its metrics dict.
         all_tasks_metrics = [
             task.on_validation_test_epoch_end(split) for task in self.tasks.values()
         ]
+        # Keep only metrics common to all tasks.
         common_metric_names = set.intersection(
             *(set(metrics) for metrics in all_tasks_metrics)
         )
+        # Log harmonic mean across tasks of each shared metric (only if all >= 0).
         # For pytorch-lightning to behave correctly, it is crucial that the log statements happen in the same order
         # on all replicas. The `sorted` guarantees this.
         for metric_name in sorted(common_metric_names):
@@ -701,10 +736,12 @@ class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
 
         Each task gets its own scores and labels: logits[task], batch[label][task].
         """
+        # One shared forward: per-task window scores {task: [ΣW, 1]}.
         logits, lengths = self.forward(
             batch[DatasetFields.FEATURES], batch[DatasetFields.LENGTH]
         )
 
+        # Each task computes its own loss on its scores and labels; sum them.
         total_loss = sum(
             task.step(
                 split,
@@ -738,6 +775,7 @@ class MultiTaskOrdinalRegressionPLModule(pl.LightningModule):
         logits, lengths = self.forward(
             batch[DatasetFields.FEATURES], batch[DatasetFields.LENGTH]
         )
+        # Per task: average the per-window scores into one score per recording.
         logits = {
             task_name: average_tensor_in_segments(tensor, lengths)
             for task_name, tensor in logits.items()
@@ -784,6 +822,7 @@ class KintsugiBackboneBase(pl.LightningModule):
         modules_to_save, ...); modules_to_save layers (e.g. conv1/conv2) train fully.
         """
         if lora_params is not None and len(lora_params) > 0:
+            # LoRA path: wrap backbone, log layers adapted vs fully trained.
             lora_config = LoraConfig(**lora_params)
             self.backbone = get_peft_model(self.backbone, lora_config)
             rank_zero_log_info(f"Using LoRA params: {lora_config}")
@@ -819,6 +858,7 @@ class WhisperBackbone(KintsugiBackboneBase):
         """
         super().__init__()
         hf_config = hf_config if hf_config is not None else dict()
+        # Load config, then keep only the encoder (decoder dropped), in train mode.
         backbone_config = WhisperConfig.from_pretrained(model, **hf_config)
         self.backbone = (
             WhisperModel.from_pretrained(
@@ -857,6 +897,7 @@ class Wav2Vec2Backbone(KintsugiBackboneBase):
         """Load the pretrained wav2vec2 model from HuggingFace and apply LoRA."""
         super().__init__()
         hf_config = hf_config if hf_config is not None else dict()
+        # Load config and pretrained wav2vec2 in train mode, then apply LoRA.
         backbone_config = Wav2Vec2Config.from_pretrained(model, **hf_config)
         self.backbone = Wav2Vec2Model.from_pretrained(
             model,
@@ -885,6 +926,7 @@ class BERTBackbone(KintsugiBackboneBase):
         """Load pretrained BERT from HuggingFace and apply LoRA."""
         super().__init__()
         hf_config = hf_config if hf_config is not None else dict()
+        # Load config and pretrained BERT in train mode, then apply LoRA.
         backbone_config = BertConfig.from_pretrained(model, **hf_config)
         self.backbone = BertModel.from_pretrained(model, config=backbone_config).train()
         self.apply_lora(lora_params)
@@ -933,6 +975,7 @@ class LLAMABackbone(KintsugiBackboneBase):
 
         Shapes: x["text"] input_ids/attention_mask [ΣW, L] -> [ΣW, D] (3072 for Llama-3.2-3B).
         """
+        # Run LLaMA keeping all hidden states.
         output = self.backbone(
             input_ids=x["text"]["input_ids"],
             attention_mask=x["text"]["attention_mask"],
@@ -975,6 +1018,7 @@ class MultitaskHead(pl.LightningModule):
             # factorization isn't performed.
             num_layers = len(proj_dims)
             modules = []
+            # Linear+Mish for all but the last dim; the last Linear is added after.
             for output_dim in proj_dims[:-1]:
                 modules.extend([nn.Linear(input_dim, output_dim), nn.Mish()])
                 input_dim = output_dim
