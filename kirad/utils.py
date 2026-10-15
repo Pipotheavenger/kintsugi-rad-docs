@@ -60,19 +60,23 @@ def load_audio(
     if isinstance(fp, str):
         fp = Path(fp)
 
+    # Read the file; unreadable audio yields None.
     try:
         audio, sample_rate = torchaudio.load(fp)
     except RuntimeError as e:
         logger.warning(f"{fp.name} could not be loaded: {e}")
         return None
 
+    # Multi-channel to mono: keep channel 0.
     if audio.dim() == 2:
         audio = audio[0].squeeze()
 
+    # Reject empty recordings.
     if len(audio) == 0:
         logger.warning(f"{fp.name} is empty")
         return None
 
+    # Resample to the target rate (warn when upsampling).
     if target_sample_rate is not None:
         if target_sample_rate > sample_rate:
             logger.warning(
@@ -102,9 +106,11 @@ def average_tensor_in_segments(tensor: torch.Tensor, lengths: list[int] | torch.
     """
     if not torch.is_tensor(lengths):
         lengths = torch.tensor(lengths, device=tensor.device)
+    # Recording index for each window row (repeated by its length).
     index = torch.repeat_interleave(
         torch.arange(len(lengths), device=tensor.device), lengths
     )
+    # Sum each recording's windows into [B, ...], then divide by its length.
     out = torch.zeros(
         lengths.shape + tensor.shape[1:], device=tensor.device, dtype=tensor.dtype
     )
@@ -134,8 +140,10 @@ def average_and_variance_tensor_in_segments(
     """
     if not torch.is_tensor(lengths):
         lengths = torch.tensor(lengths, device=tensor.device)
+    # Per-recording mean, repeated back to window rows for the deviations.
     mean = average_tensor_in_segments(tensor, lengths)
     mean_broadcast = torch.repeat_interleave(mean, lengths, dim=0)
+    # Variance = mean of squared deviations per recording (biased).
     return mean, average_tensor_in_segments(
         torch.square(tensor - mean_broadcast), lengths
     )
@@ -152,12 +160,14 @@ def localize_wandb_artifact(
     Download an artifact from wandb and return its local path.
     Note: returns the first file in the folder unless `return_dir`; cache is never refreshed.
     """
+    # Cache dir keyed by run id, artifact name and tag.
     artifact_dir = USER_CACHE_DIR_KINTSUGI / f"wandb_run_{run.id}" / artifact_name / tag
 
     # If the directory doesn't exist, the artifact was not cached before,
     # so we need to download it
     if not artifact_dir.exists():
 
+        # Download the artifact from W&B into the cache dir.
         artifact_dir.mkdir(parents=True, exist_ok=True)
 
         wandb_name = f"{run.entity}/{run.project}/{artifact_name}:{tag}"
@@ -191,21 +201,20 @@ def get_wandb_run_name_tag_from_artifact_url(
 
     """
 
-    #
+    # Split the URL into its path parts.
     ckpt_path = url.replace("https://", "").split("/")
     # HARDCODED: URL layout host/entity/project/artifacts/type/name[/tag]; tag defaults to "best"
     assert 6 <= len(ckpt_path) <= 7  # len is 6 when model tag is omitted
 
-    #
+    # Pick entity, project, name and tag (default best).
     entity, project, name = ckpt_path[1], ckpt_path[2], ckpt_path[5]
     tag = "best" if len(ckpt_path) == 6 else ckpt_path[6]
 
-    #
+    # Look up the run that logged this artifact.
     api = wandb.Api()
     artifact_path = f"{entity}/{project}/{name}:{tag}"
     run = api.artifact(artifact_path).logged_by()
 
-    #
     return run, name, tag
 
 
@@ -223,9 +232,12 @@ class TSVAccumulator:
 
     def write(self, first: str, *rest: str) -> None:
         """Add one column: "<header> - <first>" in row 0, then `rest` down the rows."""
+        # Entries for this column: prefixed header first, then the values.
         entries = (f"{self.header} - {first}",) + rest
+        # Grow the table so every entry has a row.
         for _ in range(len(entries) - len(self.rows)):
             self.rows.append([""] * len(self.rows[0]))
+        # Pad short columns with empty cells, then append column-wise.
         padded_entries = entries + ("",) * (len(self.rows) - len(entries))
         for i, entry in enumerate(padded_entries):
             self.rows[i].append(entry)
@@ -260,12 +272,14 @@ def get_wandb_report_card_tsvs(
     """
     wandb_path_test = wandb_path_test or wandb_path
 
+    # Open the train and test runs and an artifact to hold the cards.
     api = wandb.Api()
     run = api.run(wandb_path)
     run_test = api.run(wandb_path_test)
 
     artifact = wandb.Artifact(f"report-cards-{run_test.id}", "report-cards")
 
+    # Load the best checkpoint's state_dict and the per-budget indeterminate metrics.
     data_params = run.config["data_params"]
     ckpt_path = localize_wandb_artifact(
         run,
@@ -275,9 +289,11 @@ def get_wandb_report_card_tsvs(
     state_dict = torch.load(ckpt_path, map_location=torch.device("cpu"))["state_dict"]
     _, indet_oma = indet_analysis(wandb_path, wandb_path_test)
 
+    # One TSV report card per task.
     tsvs = dict()
     for task in run.config["model_params"]["tasks"]:
         tsv = TSVAccumulator()
+        # Model info section.
         tsv.set_header("Model info")
         tsv.write("name", "FILL IN")
         tsv.write("version", "FILL IN")
@@ -285,12 +301,14 @@ def get_wandb_report_card_tsvs(
         tsv.write("wandb model registry url", "FILL IN")
         tsv.write("trained date", run.metadata["startedAt"].split("T")[0])
         tsv.write("wandb run url", run.url)
+        # Datasets section: dataset version per split, plus the shared data sources.
         tsv.set_header("Datasets")
         for split in ("train", "val", "test"):
             tsv.write(
                 split,
                 f"{data_params[split + '_split_or_dataset_version']} ({', '.join(data_params['data_sources'])})",
             )
+        # Binary OMA metrics: sn_eq_sp and auroc on the test split.
         tsv.set_header("Binary OMA metrics")
         tsv.write(
             "sn_eq_sp_test",
@@ -300,9 +318,11 @@ def get_wandb_report_card_tsvs(
             "auroc_test",
             f"{run_test.summary[f'{task}/metrics/test/auroc@0%i']:.1%}",
         )
+        # Per-budget metrics from indet_analysis, shown as percentages.
         indet_task = indet_oma.loc[task].rename_axis("indet_budget_val").reset_index()
         for series_name, series in indet_task.items():
             tsv.write(series_name, *[f"{item:.1%}" for item in series])
+        # Multi-class metrics on test at tuned thresholds, with constant baseline.
         tsv.set_header("Multi-class metrics")
         for class_metric in (
             "absolute_error",
@@ -311,6 +331,7 @@ def get_wandb_report_card_tsvs(
             "macro_precision",
             "accuracy",
         ):
+            # Test value of this metric at the tuned thresholds.
             val = run_test.summary[
                 f"{task}/thresh_metrics/test/{class_metric}/tuned_for_{threshold_objective}"
             ]
@@ -326,6 +347,7 @@ def get_wandb_report_card_tsvs(
                     pass
             tsv.write(f"{class_metric} {min_max}", f"{val:.3f}")
             tsv.write("baseline for ⬅️", f"{baseline:.3f}")
+        # Thresholds stored in the checkpoint for this objective.
         tsv.set_header("Multi-class thresholding")
         tsv.write("objective", threshold_objective)
         tsv.write(
@@ -341,6 +363,7 @@ def get_wandb_report_card_tsvs(
         with artifact.new_file(f"{task}.tsv.txt", "w", "utf-8") as f:
             f.write(tsvs[task])
 
+    # Resume the test run and log the report cards to it.
     entity, project, id_ = wandb_path_test.split("/")
     with wandb.init(
         project=project, entity=entity, id=id_, resume="allow"
@@ -371,6 +394,7 @@ def get_wandb_report_card_tsvs_with_instructions(
     tsvs = get_wandb_report_card_tsvs(
         wandb_path, wandb_path_test, threshold_objective=threshold_objective
     )
+    # Paste instructions shown before the cards.
     header = dedent(
         """\
         Paste each of these model report card TSVs into the tab of the google sheet
@@ -384,6 +408,7 @@ def get_wandb_report_card_tsvs_with_instructions(
 
     """
     )
+    # Append each task's TSV under its title.
     task_text = "Task: {task} (TSV for pasting into spreadsheet)\n\n{tsv}\n\n"
     return header + "".join(
         task_text.format(task=task, tsv=tsv) for task, tsv in tsvs.items()
@@ -444,6 +469,7 @@ def get_dataframe_with_scores(
     """
     api = wandb.Api()
     run = api.run(wandb_path)
+    # Choose which scores version to read; test scores are always v0.
     if split == "test":
         if scores_tag not in (None, "v0") or model_tag not in (None, "best"):
             raise ValueError(
@@ -455,6 +481,7 @@ def get_dataframe_with_scores(
             raise ValueError(
                 f"Got {scores_tag=} and {model_tag=}; at most one should be specified."
             )
+        # Default: scores of the epoch stored in the chosen model checkpoint.
         if scores_tag is None:
             model_tag = model_tag or "best"
             ckpt_path = localize_wandb_artifact(run, f"model-{run.id}", model_tag)
@@ -474,11 +501,13 @@ def get_dataframe_with_scores(
     # regardless of which split these actually came from.
     # TODO Clean this up somehow so no hack is needed.
     data_params = run.config["data_params"]
+    # Old configs keep flat data_params; new ones nest per-split metadata.
     new_format = (
         "metadata" in data_params
         or "metadata=kirad.datasets_and_dataloaders.KintsugiMetadata" in data_params
     )
     if new_format:
+        # Take the metadata section; per-split params are rebuilt below.
         data_params = data_params.get("metadata") or data_params.get(
             "metadata=kirad.datasets_and_dataloaders.KintsugiMetadata"
         )
@@ -490,7 +519,7 @@ def get_dataframe_with_scores(
                 data_params[s] |= data_params.get("val_test", {})
             data_params[s] |= split_params
 
-    #
+    # Dataset version, sources and fold for each split.
     dataset_version, data_sources, dataset_folds = {}, {}, {}
     for s in ["train", "val", "test"]:
         if new_format:
@@ -503,7 +532,7 @@ def get_dataframe_with_scores(
             data_sources[s] = data_params["data_sources"]
         if not isinstance(dataset_version[s], list):
             dataset_version[s] = [dataset_version[s]]
-    #
+    # Concatenate the base datasets of all splits (see note above).
     df = pd.concat(
         [
             load_relative_dataset(
@@ -523,12 +552,14 @@ def get_dataframe_with_scores(
     # This may lead to duplicate entries/rows (or even three-plicates).
     df.drop_duplicates(inplace=True)
 
+    # Task names from the config (location depends on the format).
     if new_format:
         tasks = run.config["model_params"]["config"]["classifier_config"][
             "tasks"
         ].keys()
     else:
         tasks = run.config["model_params"]["tasks"].keys()
+    # Per task: fetch scores table, rename its columns, join on uuid.
     for task in tasks:
         task_df = (
             api.artifact(
@@ -561,19 +592,25 @@ def indet_analysis(
     Returns (per-cut records, mean over cuts per task and budget) as DataFrames.
     Hardcoded: tasks ("anxiety", "depression"); budgets 0.0..0.9 in steps of 0.1.
     """
+    # Scores and labels: val to tune thresholds, test to evaluate them.
     df_val = get_dataframe_with_scores(wandb_path, "val")
     df_test = get_dataframe_with_scores(wandb_path_test or wandb_path, "test")
+    # One record per task, binary cut and indeterminate budget.
     records = []
     for task in ("anxiety", "depression"):  # HARDCODED: task names; edit for other outcomes
+        # Val and test labels/scores for this task.
         labels_val = df_val[f"quantized_labels_{task}"]
         scores_val = df_val[f"scores_{task}"]
         labels_test = df_test[f"quantized_labels_{task}"]
         scores_test = df_test[f"scores_{task}"]
+        # Each binary cut is label > quantized_label_thresh.
         for quantized_label_thresh in range(labels_val.max()):
+            # ROC builder on val for this cut; yields a curve per budget.
             issa = IndetSnSpArray.build(
                 y_true=(labels_val > quantized_label_thresh).astype(int),
                 y_score=scores_val,
             )
+            # Tune the sn_eq_sp operating point on val, then evaluate it on test.
             for budget in budgets:
                 roc = issa.roc_curve(budget)
                 op = roc.sn_eq_sp()
@@ -581,6 +618,7 @@ def indet_analysis(
                     y_true=(labels_test > quantized_label_thresh).astype(int),
                     y_score=scores_test,
                 )
+                # Record val and test metrics of this operating point.
                 records.append(
                     dict(
                         task=task,
@@ -595,6 +633,7 @@ def indet_analysis(
                         indet_frac_diff=op_on_test.indet_frac - budget,
                     )
                 )
+    # Average over cuts per task and budget.
     df_indet = pd.DataFrame(records)
     gb = df_indet.groupby(["task", "indet_budget_val"])
     gb_oma_cols = gb[
@@ -624,18 +663,22 @@ def analyze_dataframe_with_scores(
     tasks : names of tasks to analyze scores and labels for, e.g. `("anxiety", "depression")`
 
     """
+    # Add quantized_<key> columns (as-is or binned) to group by.
     for key, bins in quantize_and_groupby.items():
         if bins is None:
             df[f"quantized_{key}"] = df[key]
         else:
             df[f"quantized_{key}"] = pd.cut(df[key], bins, right=False)
+    # Number of binary cuts per task = max quantized label.
     num_splits = {task: df[f"quantized_labels_{task}"].max() for task in tasks}
+    # Metrics per subgroup, averaged over cuts.
     rows = []
     for vals, sub_df in df.groupby(
         [f"quantized_{key}" for key in quantize_and_groupby], observed=True
     ):
         row = dict(zip(quantize_and_groupby, vals))
         for task in tasks:
+            # Accumulate AUROC and sn_eq_sp over this task's binary cuts.
             auroc_sum = 0
             sn_eq_sp_sum = 0
             for c_idx in range(num_splits[task]):
@@ -673,6 +716,7 @@ def get_package_path(package: Literal["kipy", "kirad"]) -> Path:
     ValueError
         Raised if `package` isn't "kipy" or "kirad".
     """
+    # Env var name for the package.
     if package == "kipy":
         os_env_var = "KIPY_PATH"
     elif package == "kirad":
@@ -680,6 +724,7 @@ def get_package_path(package: Literal["kipy", "kirad"]) -> Path:
     else:
         raise ValueError(f'Package must be "kipy" or "kirad". Received "{package}".')
 
+    # Prefer the env var; otherwise derive the path from the import location.
     package_path = os.getenv(os_env_var)
     if package_path is None:
         # Not set in the environment
@@ -766,6 +811,7 @@ def import_object(object_path: str) -> type:
         The object. Note that this is not an instantiation of the object; is a reference
         to the object itself.
     """
+    # Split module path and attribute, import the module, return the attribute.
     pkg, obj = object_path.rsplit(".", maxsplit=1)
     module = importlib.import_module(pkg)
 
@@ -777,7 +823,7 @@ def transfer_to_cuda(x, device=0):
     if isinstance(x, torch.Tensor):
         return x.cuda(device)
 
-    #
+    # Recurse into dicts; any other type is rejected.
     if isinstance(x, Mapping):
         return {k: transfer_to_cuda(v, device) for k, v in x.items()}
     else:
@@ -831,7 +877,7 @@ def cache_backbone(
     assert len(datasets) == len(data_loader_args)
     data_loader_args = map(copy.deepcopy, data_loader_args)
 
-    #
+    # Run the backbone over each dataset, caching outputs by uuid.
     local_cache = dict()
     for dataset, args in zip(datasets, data_loader_args):
         args["shuffle"], args["drop_last"] = False, False
@@ -916,6 +962,7 @@ def read_google_asr_json(json_file: str | Path) -> str:
     with open(json_file) as jsonfile:
         data = json.load(jsonfile)
 
+    # Join the top alternative of every result into one transcript string.
     return "".join(
         [
             result["alternatives"][0]["transcript"]
@@ -936,6 +983,7 @@ def flat_to_nested_dict(d_in: Mapping, sep: str = "."):
 
     """
     d_out = dict()
+    # Walk each dotted key, creating nested dicts; reject prefix collisions.
     for k, v in d_in.items():
         levels = k.split(sep)
         cur_level = d_out
@@ -944,6 +992,7 @@ def flat_to_nested_dict(d_in: Mapping, sep: str = "."):
             if not isinstance(cur_level, dict):
                 k_short = sep.join(levels[: i + 1])
                 raise ValueError(f"key {k_short!r} reused as prefix of key {k!r}.")
+        # Leaf key already exists as a dict, so it is a prefix of another key.
         if levels[-1] in cur_level:
             k_long = next(key for key in d_in if key.startswith(k + sep))
             raise ValueError(f"key {k!r} reused as prefix of key {k_long!r}.")
@@ -966,6 +1015,7 @@ def nested_to_flat_dict(
     """
     if d_out is None:
         d_out = dict()
+    # Recurse into dicts building dotted keys; other values are leaves.
     if isinstance(d_in, dict):
         for key, value in d_in.items():
             if prefix is not None:
@@ -985,6 +1035,7 @@ def combine_backbone_modality_state_dicts(**backbone_dicts: Mapping):
 
     """
     merged = dict()
+    # Per modality: extract the backbone weights from its state_dict.
     for key, backbone_dict in backbone_dicts.items():
         # The weights may or may not be nested under `"state_dict"`
         backbone_dict = backbone_dict.get("state_dict", backbone_dict)
@@ -1001,6 +1052,7 @@ def combine_backbone_modality_state_dicts_from_wandb(
 
     Create a checkpoint for a DAM 2 style backbone-only state_dict from wandb run ids of individual backbones.
     """
+    # Load each run's best model and save the merged backbone checkpoint.
     api = wandb.Api()
     torch.save(
         combine_backbone_modality_state_dicts(

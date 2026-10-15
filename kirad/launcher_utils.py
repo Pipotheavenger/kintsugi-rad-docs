@@ -48,6 +48,7 @@ class DistributedModelCheckpoint(ModelCheckpoint):
         Non-zero nodes (local rank 0) store only {"state_dict"} and delete the old best.
         Note: needs torch.distributed initialized (uses barriers).
         """
+        # Remember the previous best path and sync ranks before the standard save.
         best_ckpt_prev = self.best_model_path
         torch.distributed.barrier()
 
@@ -126,6 +127,7 @@ class TrainingParams(BaseModel):
     def __init__(self, *args, **kwargs):
         """Compute the global batch size (WORLD_SIZE x batch_size) and seed everything."""
         super().__init__(*args, **kwargs)
+        # Global batch = world size (WORLD_SIZE, else GPU count; 1 on CPU) x batch_size.
         num_gpus = torch.cuda.device_count()
         world_size = int(os.environ.get("WORLD_SIZE", num_gpus)) if num_gpus > 0 else 1
         self._global_batch_size = world_size * self.batch_size
@@ -169,6 +171,7 @@ class ModelParams(BaseModel):
         """Resolve ckpt_path (W&B download or backbone cache) and check restored config."""
         super().__init__(*args, **kwargs)
 
+        # A backbone cache replaces ckpt_path; setting both is an error.
         self._cached_backbone = False
         if self.ckpt_path and backbone_cache:
             # Setting ckpt_path and backbone_cache is not allowed because one can
@@ -187,6 +190,7 @@ class ModelParams(BaseModel):
         # (epoch #0) and potentially with new optimizer params, but with weights
         # initialized from the checkpoint.
         if self.ckpt_path is not None and self.ckpt_path != "":
+            # Localize a W&B checkpoint given as artifact URL or entity/project/run:tag.
             if self.ckpt_path.startswith("https://"):
                 run, name, tag = get_wandb_run_name_tag_from_artifact_url(
                     self.ckpt_path
@@ -237,6 +241,7 @@ class LauncherConfig:
         experiment_dir (default: the config's folder) is added to sys.path so the
         experiment's model.py can be imported by model_path.
         """
+        # Resolve the experiment directory (default: the config's folder).
         if experiment_dir is None:
             if isinstance(config, Mapping):
                 raise ValueError(
@@ -246,20 +251,24 @@ class LauncherConfig:
             self.experiment_dir = Path(config).expanduser().resolve().parent
         else:
             self.experiment_dir = Path(experiment_dir).resolve()
+        # Load the YAML when config is a path.
         if isinstance(config, str | Path):
             with open(config, "r") as f:
                 config = yaml.safe_load(f)
         self.config = config
 
+        # Experiment identity and sys.path entry so model_path can be imported.
         self.experiment_name = config["experiment_name"]
         self.description = config["description"]
         sys.path.append(str(self.experiment_dir))
 
+        # Training params are optional: without them the config is inference-only.
         if "training_params" in config and len(config["training_params"]) > 0:
             self.training_params = TrainingParams(**config["training_params"])
         else:
             logger.info("No training params specified. Only suitable for inference.")
             self.training_params = None
+        # Set up compute (GPU/CPU workers) and data (dataset factories) params.
         self._init_compute_params()
         self._init_data_params()
         # Check if backbone cache is specified in order to resolve the behavior of
@@ -346,6 +355,7 @@ class LauncherConfig:
                     self.modality_params[modality][split] = self.get_params_by_split(
                         class_params, split, include_dataset_splits=False
                     )
+        # The metadata entry is mandatory.
         if self.metadata_factory is None:
             raise ValueError(
                 "Missing metadata in the config. Must specify "
@@ -371,6 +381,7 @@ class LauncherConfig:
             training_params=self.training_params,
             cached_backbone=self.model_params._cached_backbone,
         )
+        # Load ckpt weights now, or defer a full restore to trainer.fit.
         if self.model_params.ckpt_path is not None:
             if self.model_params.restore_training_state:
                 # Use trainer.fit(ckpt_path=<path_to_ckpt>) to restore the training state
@@ -431,6 +442,7 @@ class LauncherConfig:
     ) -> Mapping:
         """DataLoader kwargs: broadcast_collate, UuidSampler (shuffled + drop_last if train)."""
         metadata = self.get_metadata(split)
+        # Settings shared by all splits.
         split_indep_kwargs = dict(
             batch_size=self.training_params.batch_size,
             num_workers=self.cpus_per_worker,
@@ -454,6 +466,7 @@ class LauncherConfig:
         try:
             data_loader = self.data_loader[split, training_mode]
         except KeyError:
+            # First request: build the dataset and its loader, then cache it.
             dataset = self.get_dataset(split)
 
             data_loader_kwargs = self.get_data_loader_kwargs(split, training_mode)
@@ -556,8 +569,10 @@ class LauncherConfig:
         if split in {"val", "test"}:
             params |= all_splits_params.get("val_test", {})
         params |= all_splits_params.get(split, {})
+        # Metadata needs dataset_splits; default it to the split name.
         if include_dataset_splits:
             params["dataset_splits"] = params.get("dataset_splits", split)
+        # Make params that point to existing files absolute (other values untouched).
         params = self.resolve_artifact_paths_in_param_dict(params)
 
         return params
@@ -583,6 +598,7 @@ class LauncherLogger:
             config=config,
         )
 
+        # Expose the W&B run and its id (used to name artifacts).
         self.run = self.wandb_logger.experiment
         self.wandb_run_id = self.wandb_logger.version
 
@@ -593,6 +609,7 @@ class LauncherLogger:
 
     def log_table_artifacts(self, data: Mapping[str, Mapping[str, pd.DataFrame]]):
         """Upload {artifact: {table_name: DataFrame}} as W&B table artifacts."""
+        # One artifact per name; each DataFrame is logged as a W&B table.
         for artifact_name, artifact_data in data.items():
             artifact_name_ = f"{artifact_name}-{self.wandb_run_id}"
             artifact_type = artifact_name

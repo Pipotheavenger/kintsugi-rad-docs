@@ -27,6 +27,7 @@ def run_whisper_asr(
     Note: raises if the file is not 16 kHz; does not resample.
     Hardcoded: model "large-v3", language="en", beam 5, temperature fallback.
     """
+    # Resolve paths and make sure the output directory exists.
     audio_filename = Path(audio_filename).expanduser().resolve()
     output_dir = Path(output_filename).expanduser().resolve().parent
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -34,6 +35,7 @@ def run_whisper_asr(
     # HARDCODED: ASR model "large-v3"; reloaded on every call.
     model = whisper.load_model("large-v3")
 
+    # Convert optional start/end seconds into a frame offset and frame count.
     if start_time is None:
         frame_offset = 0
     else:
@@ -43,6 +45,7 @@ def run_whisper_asr(
     else:
         end_frame = int(end_time * EXPECTED_SAMPLE_RATE)
         num_frames = end_frame - frame_offset
+    # Load just the requested slice; the sample rate must already be 16 kHz.
     audio, fs = torchaudio.load(
         audio_filename, frame_offset=frame_offset, num_frames=num_frames
     )
@@ -51,9 +54,11 @@ def run_whisper_asr(
             f"Sampling rate of audio ({fs}) doesn't match `EXPECTED_SAMPLE_RATE` "
             f"({EXPECTED_SAMPLE_RATE})."
         )
+    # Drop the channel dim (assumes a mono file) so Whisper gets a 1-D waveform.
     if audio.dim() == 2:
         audio = audio.squeeze()
 
+    # Transcribe with word timestamps, VAD and disfluencies; decoding set below.
     result = whisper.transcribe(
         model,
         audio,
@@ -69,5 +74,6 @@ def run_whisper_asr(
         verbose=None,
     )
 
+    # Write the transcript JSON to output_filename.
     with open(output_filename, "w") as jsonfile:
         json.dump(result, jsonfile, indent=2, ensure_ascii=False)

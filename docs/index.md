@@ -32,7 +32,7 @@ first line of each docstring, read at build time: to change them, edit the code.
 
 ```bash
 pip install -e .                    # env: envs/kipy-gpu-full.yaml
-# 1. scripts/launcher.py: set wandb_entity / wandb_project (L158-159), drop "kipy" (L236)
+# 1. scripts/launcher.py: set wandb_entity / wandb_project (L172-173), drop "kipy" (L255)
 # 2. edit research/stable/ordinal_regression_mtl_mar_2024/config.yaml (DAM 1), or a copy in the
 #    same folder (or pass --experiment-dir), and set, per split,
 #    df_or_dataset_version: <split>.csv and audio_root: <dir>; remove merge_rows_by_subject

@@ -29,6 +29,7 @@ def create_task_modules_from_params(tasks):
 
     Hardcoded: indet_budgets default (0.0, 0.4).
     """
+    # One OrdinalRegressionPLModule per task, with cutoffs and loss weights.
     task_modules = {
         task: OrdinalRegressionPLModule(
             num_classes=task_config["num_classes"],
@@ -67,6 +68,7 @@ class DepAnxClassifierBase(MultiTaskOrdinalRegressionPLModule):
         task_modules = create_task_modules_from_params(training_params.tasks.items())
         super().__init__(task_modules)
 
+        # Sum of backbone embedding dims = head input size.
         self.backbone = backbone
         backbone_dim = sum(
             [backbone.backbone_dim for backbone in self.backbone.values()]
@@ -106,6 +108,7 @@ class DepAnxClassifierBase(MultiTaskOrdinalRegressionPLModule):
         """
         if self.training_params is None:
             return None
+        # Two param groups: backbone, and head + CORAL biases, each with its own lr.
         optimizer = torch.optim.AdamW(
             [
                 {
@@ -129,6 +132,7 @@ class DepAnxClassifierBase(MultiTaskOrdinalRegressionPLModule):
                 },
             ]
         )
+        # Multi-step LR decay from the config.
         scheduler = MultiStepLR(
             optimizer, **self.training_params.scheduler.model_dump()
         )

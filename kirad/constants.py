@@ -12,6 +12,7 @@ import torch
 
 # HARDCODED: audio must already be 16 kHz; files are not resampled.
 EXPECTED_SAMPLE_RATE = 16000
+# Torch device: GPU if available; CPU device is used for loading checkpoints.
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CPU_DEVICE = torch.device("cpu")
 MAX_FINITE_FLOAT32 = float(np.finfo(np.float32).max)
@@ -20,6 +21,7 @@ MAX_FINITE_FLOAT32 = float(np.finfo(np.float32).max)
 # HARDCODED: VAD silence/speech minimums (ms); VAD itself runs upstream, not in this repo.
 DEFAULT_VAD_MIN_SILENCE_DURATION_MS = 100
 DEFAULT_VAD_MIN_SPEECH_DURATION_MS = 250
+# VAD minimums per audio type: short prompts, long conversations, inference default.
 VAD_PARAMS = {
     "prompt": {"min_silence_duration_ms": 100, "min_speech_duration_ms": 250},
     "conversational": {"min_silence_duration_ms": 1000, "min_speech_duration_ms": 5000},
@@ -100,6 +102,7 @@ DataSource = Literal[
     "all",
 ]
 DatasetSplit = Literal["train", "val", "test", "all"]
+# Names of feature-store buckets (audio preprocessing stage and VAD params type).
 FeatureStoreBucket = Literal[
     "raw",
     "resampled",
@@ -109,6 +112,7 @@ FeatureStoreBucket = Literal[
     "resampled_and_trimmed_audio_with_prompt_vad_params",
 ]
 
+# Per dataset version: number of CV folds and remote URI (None in this copy).
 DATASET_VERSION_METADATA = {
     "v1": {"n_folds": 5, "uri": None},
     "v1.0.1": {"n_folds": 5, "uri": None},
